@@ -269,6 +269,33 @@ static bool tl_is_injection_allowed_for_process_by_filter(
         return false;
     }
 
+    // 0. WindowServer Protection Gate
+    // WindowServer is macOS's display compositor server and cannot load AppKit or arbitrary GUI tweaks.
+    // It must NEVER receive any tweak unless the tweak's Executables filter explicitly names "WindowServer".
+    bool is_window_server = (proc_name && strcmp(proc_name, "WindowServer") == 0) ||
+                            (exec_path && (strstr(exec_path, "/WindowServer") != NULL));
+    if (is_window_server) {
+        bool explicitly_targets_ws = false;
+        CFArrayRef executables_filter = (CFArrayRef)CFDictionaryGetValue(filters, CFSTR("Executables"));
+        if (executables_filter && CFGetTypeID(executables_filter) == CFArrayGetTypeID()) {
+            CFIndex count = CFArrayGetCount(executables_filter);
+            for (CFIndex i = 0; i < count; i++) {
+                CFTypeRef item = CFArrayGetValueAtIndex(executables_filter, i);
+                if (!item || CFGetTypeID(item) != CFStringGetTypeID()) continue;
+                char buf[64];
+                if (CFStringGetCString((CFStringRef)item, buf, sizeof(buf), kCFStringEncodingUTF8)) {
+                    if (strcasecmp(buf, "WindowServer") == 0) {
+                        explicitly_targets_ws = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!explicitly_targets_ws) {
+            return false;
+        }
+    }
+
     // 1. ExcludeBundles (Hard veto: if matched, reject tweak immediately)
     CFArrayRef exclude_bundles = (CFArrayRef)CFDictionaryGetValue(filters, CFSTR("ExcludeBundles"));
     if (exclude_bundles && CFGetTypeID(exclude_bundles) == CFArrayGetTypeID()) {
