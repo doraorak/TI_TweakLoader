@@ -77,16 +77,31 @@ sudo mkdir -p "$INSTALL_ROOT/LaunchdHook" "$INSTALL_ROOT/SafeMode"
 sudo cp "$DD/LaunchdHook/launchd_hooks.dylib"  "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib"
 sudo cp "$DD/LaunchdHook/xpcproxy_hooks.dylib" "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib"
 sudo cp "$DD/libtweakLoader.dylib" "$INSTALL_ROOT/libtweakLoader.dylib"
-[ -f "$DD/ldrestart" ] && sudo cp "$DD/ldrestart" /usr/local/bin/ldrestart
+# Linked by tweaks for PSPreferences / PSUserDefaults.
+sudo cp "$DD/libprefSupport.dylib" "$INSTALL_ROOT/libprefSupport.dylib"
+if [ -f "$DD/libellekit.dylib" ]; then
+    sudo cp "$DD/libellekit.dylib" "$INSTALL_ROOT/libellekit.dylib"
+    sudo mkdir -p /usr/local/lib
+    sudo cp "$DD/libellekit.dylib" /usr/local/lib/libellekit.dylib
+    sudo ln -sf /usr/local/lib/libellekit.dylib /usr/local/lib/libsubstrate.dylib
+fi
 
 # The pill lives beside the Safe Mode markers it advertises. Deploying the
 # loader without it leaves the loader dlopen()ing a path that does not exist.
 sudo cp "$DD/libsafeModePill.dylib" "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib"
+# libsafeMode.dylib lives beside the pill now: /Library/TweakInject/SafeMode
+# holds the two Safe Mode dylibs and nothing else.
+sudo cp "$DD/libsafeMode.dylib" "$INSTALL_ROOT/SafeMode/libsafeMode.dylib"
+sudo rm -f "$INSTALL_ROOT/libsafeMode.dylib"
+# Runtime state no longer lives in a payload directory; the marker is
+# /var/run/tweakinject.safemode.
+sudo rm -f "$INSTALL_ROOT/SafeMode/"*.txt
 # It used to live in the payload root; nothing loads it from there any more.
 sudo rm -f "$INSTALL_ROOT/libsafeModePill.dylib"
 sudo chown -R root:wheel "$INSTALL_ROOT/SafeMode"
 sudo chmod 755 "$INSTALL_ROOT/SafeMode"
 [ -f "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib"
+[ -f "$INSTALL_ROOT/SafeMode/libsafeMode.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/libsafeMode.dylib"
 
 echo "Verifying what is now installed…"
 verify "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib"  "$CANARY_launchd_hooks"  "launchd_hooks"

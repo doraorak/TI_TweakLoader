@@ -295,7 +295,8 @@ static int is_path_blacklisted_from_injection(const char *path) {
     return 0;
 }
 
-#define SAFE_MODE_MARKER_PATH "/Library/TweakInject/SafeMode/.safemode"
+#define SAFE_MODE_MARKER_PATH  "/Library/TweakInject/SafeMode/.safemode"
+#define SAFE_MODE_REQUEST_PATH "/tmp/.tweakinject-safemode-request"
 
 // Safe Mode is enforced HERE now, not inside the loader.
 //
@@ -303,10 +304,10 @@ static int is_path_blacklisted_from_injection(const char *path) {
 // mapped into every process and its constructors still ran: Safe Mode described
 // what the loader declined to do rather than what was in the process. That is
 // the same mistake the per-process disable list used to make, and it costs more
-// here than anywhere else -- Safe Mode exists because something is already
-// broken, so the one thing that should be guaranteed absent is our own code.
+// here: a crashing tweak mapped into a critical process took the machine down
+// again before Safe Mode could run.
 //
-// One marker, root-owned, and deliberately NOT in /var/run: that directory is
+// Persistent, and deliberately NOT in /var/run. The contents of that directory are
 // wiped and repopulated on every userspace reboot, which is the exact operation
 // Safe Mode is built on -- write the marker, restart userspace, come up in Safe
 // Mode. A marker there is gone before anything can read it. (/var/run is right
@@ -316,8 +317,14 @@ static int is_path_blacklisted_from_injection(const char *path) {
 // /Library/TweakInject/.disabled, which had already solved the same problem.
 // It lives in the SafeMode directory beside the two dylibs it governs; the
 // leading dot keeps it out of the way of anything listing that directory.
+//
+// Checks BOTH the promoted marker AND the immediate tripwire request in /tmp.
+// When WindowServer or Dock crashes, launchd immediately respawns the daemon
+// before the helper has had time to promote the request to .safemode. Checking
+// the request file here closes that race window completely.
 static int is_safe_mode_active(void) {
-    return access(SAFE_MODE_MARKER_PATH, F_OK) == 0;
+    return (access(SAFE_MODE_MARKER_PATH, F_OK) == 0) ||
+           (access(SAFE_MODE_REQUEST_PATH, F_OK) == 0);
 }
 
 // The one exception. Safe Mode has to be able to say so on screen, and the

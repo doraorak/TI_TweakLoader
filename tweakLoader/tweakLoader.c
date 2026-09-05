@@ -37,6 +37,7 @@
 // Persistent, not /var/run: that is cleared by the userspace reboot Safe Mode
 // uses to take effect. Mirrors /Library/TweakInject/.disabled.
 #define tl_safe_mode_marker      tl_safe_mode_dir ".safemode"
+#define tl_safe_mode_request     "/tmp/.tweakinject-safemode-request"
 #define tl_deny_list_path        "/Library/TweakInject/Config/denyInjectionList.plist"
 #define tl_per_proc_tweaks_path  "/Library/TweakInject/Config/perProcessTweaks.plist"
 
@@ -584,7 +585,7 @@ __attribute__((constructor)) static void tl_init_tweak_loader(void) {
     // Reaching here in Safe Mode at all means this process is one of the
     // indicator hosts: the spawn hooks strip injection from everything else, so
     // the loader is not even mapped into the rest of the machine.
-    if (access(tl_safe_mode_marker, F_OK) == 0) {
+    if (access(tl_safe_mode_marker, F_OK) == 0 || access(tl_safe_mode_request, F_OK) == 0) {
         // ControlCenter only, matching safe_mode_indicator_hosts[] in the spawn
         // hooks: these two must name the same process or the host gets the
         // loader and never the pill, or loads the pill and duplicates the item.

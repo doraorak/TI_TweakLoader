@@ -195,7 +195,8 @@ static int is_path_blacklisted_from_injection(const char *path) {
     return 0;
 }
 
-#define SAFE_MODE_MARKER_PATH "/Library/TweakInject/SafeMode/.safemode"
+#define SAFE_MODE_MARKER_PATH  "/Library/TweakInject/SafeMode/.safemode"
+#define SAFE_MODE_REQUEST_PATH "/tmp/.tweakinject-safemode-request"
 
 // Safe Mode is enforced HERE now, not inside the loader.
 //
@@ -216,8 +217,11 @@ static int is_path_blacklisted_from_injection(const char *path) {
 // /Library/TweakInject/.disabled, which had already solved the same problem.
 // It lives in the SafeMode directory beside the two dylibs it governs; the
 // leading dot keeps it out of the way of anything listing that directory.
+//
+// Checks BOTH the promoted marker AND the immediate tripwire request in /tmp.
 static int is_safe_mode_active(void) {
-    return access(SAFE_MODE_MARKER_PATH, F_OK) == 0;
+    return (access(SAFE_MODE_MARKER_PATH, F_OK) == 0) ||
+           (access(SAFE_MODE_REQUEST_PATH, F_OK) == 0);
 }
 
 // The one exception. Safe Mode has to be able to say so on screen, and the
