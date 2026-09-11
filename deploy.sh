@@ -73,36 +73,37 @@ done
 echo "  ✓ arm64e slices present"
 
 echo "Installing (sudo)…"
-sudo mkdir -p "$INSTALL_ROOT/LaunchdHook" "$INSTALL_ROOT/SafeMode"
 sudo cp "$DD/LaunchdHook/TI_LaunchdHooks.dylib"  "$INSTALL_ROOT/LaunchdHook/TI_LaunchdHooks.dylib"
-sudo ln -sf "$INSTALL_ROOT/LaunchdHook/TI_LaunchdHooks.dylib" "$INSTALL_ROOT/LaunchdHook/LaunchdHooks.dylib"
-sudo ln -sf "$INSTALL_ROOT/LaunchdHook/TI_LaunchdHooks.dylib" "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib"
 sudo cp "$DD/LaunchdHook/TI_XpcProxyHooks.dylib" "$INSTALL_ROOT/LaunchdHook/TI_XpcProxyHooks.dylib"
-sudo ln -sf "$INSTALL_ROOT/LaunchdHook/TI_XpcProxyHooks.dylib" "$INSTALL_ROOT/LaunchdHook/XpcProxyHooks.dylib"
-sudo ln -sf "$INSTALL_ROOT/LaunchdHook/TI_XpcProxyHooks.dylib" "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib"
 sudo cp "$DD/TI_TweakLoader.dylib" "$INSTALL_ROOT/TI_TweakLoader.dylib"
-sudo ln -sf "$INSTALL_ROOT/TI_TweakLoader.dylib" "$INSTALL_ROOT/libtweakLoader.dylib"
 # Linked by tweaks for PSPreferences / PSUserDefaults.
 if [ -f "$DD/TI_PreferenceSupport.dylib" ]; then
     sudo cp "$DD/TI_PreferenceSupport.dylib" "$INSTALL_ROOT/TI_PreferenceSupport.dylib"
-    sudo ln -sf "$INSTALL_ROOT/TI_PreferenceSupport.dylib" "$INSTALL_ROOT/libprefSupport.dylib"
 fi
 if [ -f "$DD/libellekit.dylib" ]; then
     sudo cp "$DD/libellekit.dylib" "$INSTALL_ROOT/libellekit.dylib"
     sudo mkdir -p /usr/local/lib
     sudo cp "$DD/libellekit.dylib" /usr/local/lib/libellekit.dylib
-    sudo ln -sf /usr/local/lib/libellekit.dylib /usr/local/lib/libsubstrate.dylib
 fi
 
 # The pill lives beside the Safe Mode markers it advertises. Deploying the
 # loader without it leaves the loader dlopen()ing a path that does not exist.
 sudo cp "$DD/SafeModePill.dylib" "$INSTALL_ROOT/SafeMode/SafeModePill.dylib"
-sudo ln -sf "$INSTALL_ROOT/SafeMode/SafeModePill.dylib" "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib"
 # SafeMode.dylib lives beside the pill now: /Library/TweakInject/SafeMode
 # holds the two Safe Mode dylibs and nothing else.
 sudo cp "$DD/SafeMode.dylib" "$INSTALL_ROOT/SafeMode/SafeMode.dylib"
-sudo ln -sf "$INSTALL_ROOT/SafeMode/SafeMode.dylib" "$INSTALL_ROOT/SafeMode/libsafeMode.dylib"
-sudo rm -f "$INSTALL_ROOT/libsafeMode.dylib"
+
+# Purge any legacy symlinks or old filenames
+sudo rm -f "$INSTALL_ROOT/LaunchdHook/LaunchdHooks.dylib" \
+           "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib" \
+           "$INSTALL_ROOT/LaunchdHook/XpcProxyHooks.dylib" \
+           "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib" \
+           "$INSTALL_ROOT/libtweakLoader.dylib" \
+           "$INSTALL_ROOT/libprefSupport.dylib" \
+           "$INSTALL_ROOT/libsafeMode.dylib" \
+           "$INSTALL_ROOT/libsafeModePill.dylib" \
+           "$INSTALL_ROOT/SafeMode/libsafeMode.dylib" \
+           "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib"
 # Runtime state no longer lives in a payload directory; the marker is
 # /var/run/tweakinject.safemode.
 sudo rm -f "$INSTALL_ROOT/SafeMode/"*.txt
