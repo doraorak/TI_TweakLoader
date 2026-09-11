@@ -32,8 +32,8 @@
 #define tl_bundles_path          "/Library/TweakInject/Tweaks/Bundles/"
 #define tl_dylibs_path           "/Library/TweakInject/Tweaks/DynamicLibraries/"
 #define tl_safe_mode_dir         "/Library/TweakInject/SafeMode/"
-#define tl_safe_mode_dylib_path  tl_safe_mode_dir "libsafeMode.dylib"
-#define tl_safe_mode_pill_path   tl_safe_mode_dir "libsafeModePill.dylib"
+#define tl_safe_mode_dylib_path  tl_safe_mode_dir "SafeMode.dylib"
+#define tl_safe_mode_pill_path   tl_safe_mode_dir "SafeModePill.dylib"
 // Persistent, not /var/run: that is cleared by the userspace reboot Safe Mode
 // uses to take effect. Mirrors /Library/TweakInject/.disabled.
 #define tl_safe_mode_marker      tl_safe_mode_dir ".safemode"

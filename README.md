@@ -12,11 +12,11 @@ its iOS counterparts while extending what a tweak can filter on.
 
 | Component | What it is |
 |---|---|
-| `tweakLoader/` | The dylib (`TI_TweakLoader.dylib`) injected into every process. Enumerates filter plists, decides what loads, and `dlopen`s the matching tweaks. |
-| `launchd_hooks/` | Hooks `posix_spawn` inside launchd so newly spawned processes inherit the loader. Also where per-process disable and Safe Mode are enforced. |
-| `xpcproxy_hooks/` | The same for `xpcproxy`, which is what actually execs most XPC services. |
-| `safeMode/` | Crash tripwire loaded into critical processes, so a broken tweak cannot leave the machine unusable. |
-| `safeModePill/` | The menu bar indicator shown while Safe Mode is active, and the way out of it. |
+| `TweakLoader/` | The dylib (`TI_TweakLoader.dylib`) injected into every process. Enumerates filter plists, decides what loads, and `dlopen`s the matching tweaks. |
+| `LaunchdHooks/` | Hooks `posix_spawn` inside launchd so newly spawned processes inherit the loader. Also where per-process disable and Safe Mode are enforced. |
+| `XpcProxyHooks/` | The same for `xpcproxy`, which is what actually execs most XPC services. |
+| `SafeMode/` | Crash tripwire loaded into critical processes, so a broken tweak cannot leave the machine unusable. |
+| `SafeModePill/` | The menu bar indicator shown while Safe Mode is active, and the way out of it. |
 
 Disabling injection for a process, and Safe Mode itself, are enforced in the spawn
 hooks rather than in the loader: a stripped process never receives
@@ -113,8 +113,8 @@ does not depend on the app, and nothing here assumes a particular front-end.
 
 ```
 /Library/TweakInject/
-├── libtweakLoader.dylib
-├── libprefSupport.dylib
+├── TI_TweakLoader.dylib (symlinked to libtweakLoader.dylib)
+├── TI_PreferenceSupport.dylib (symlinked to libprefSupport.dylib)
 ├── libellekit.dylib
 ├── Tweaks/
 │   ├── DynamicLibraries/      tweak dylibs + their filter plists
@@ -128,8 +128,8 @@ does not depend on the app, and nothing here assumes a particular front-end.
 │   ├── perProcessTweaks.plist per-process enable/disable
 │   ├── denyInjectionList.plist
 │   └── installed_packages.plist
-├── SafeMode/                  the tripwire, the pill, and the marker
-├── LaunchdHook/               launchd + xpcproxy hooks
+├── SafeMode/                  SafeMode.dylib, SafeModePill.dylib, and .safemode
+├── LaunchdHook/               LaunchdHooks.dylib and XpcProxyHooks.dylib
 └── logs/
 ```
 
@@ -141,16 +141,16 @@ tweaks write their own preferences as the user.
 
 ## Building
 
-Open `tweakLoader.xcodeproj` and set your own development team (the shipped project
-has it blank). Targets: `tweakLoader`, `launchd_hooks`, `xpcproxy_hooks`,
-`prefSupport`, `safeMode`. `safeModePill` has no Xcode target — it is one file against
+Open `TI_TweakLoader.xcodeproj` and set your own development team (the shipped project
+has it blank). Targets: `TI_TweakLoader`, `LaunchdHooks`, `XpcProxyHooks`,
+`SafeMode`. `SafeModePill` has no Xcode target — it is one file against
 Cocoa, built directly.
 
 Or build a component by hand:
 
 ```bash
-clang -dynamiclib -arch arm64e -install_name /usr/local/lib/libtweakLoader.dylib \
-  -framework CoreFoundation -lobjc -o libtweakLoader.dylib tweakLoader/tweakLoader.c
+clang -dynamiclib -arch arm64e -install_name /Library/TweakInject/TI_TweakLoader.dylib \
+  -framework CoreFoundation -lobjc -o TI_TweakLoader.dylib TweakLoader/TweakLoader.c
 ```
 
 ## Logging

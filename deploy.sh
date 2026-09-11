@@ -21,12 +21,12 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT="$PROJECT_DIR/TI_TweakLoader.xcodeproj"
 INSTALL_ROOT="/Library/TweakInject"
-APP_PAYLOAD="/Users/doraorak/Desktop/programming/XCode-projects/APP/My apps/TweakInjectApp/Payload"
+APP_PAYLOAD="/Users/doraorak/Desktop/programming/XCode-projects/APP/My apps/TweakInject/Payload"
 
 # A canary per component: a string the CURRENT source produces and an older
 # build does not. Update these whenever the thing they prove changes.
-CANARY_launchd_hooks="SecurityAgent"
-CANARY_xpcproxy_hooks="SecurityAgent"
+CANARY_LaunchdHooks="SecurityAgent"
+CANARY_XpcProxyHooks="SecurityAgent"
 CANARY_TI_TweakLoader="/Library/TweakInject/logs/tweakinject.log"
 
 products_dir() {
@@ -49,9 +49,9 @@ verify() {
 
 if [ "${1:-}" = "--verify" ]; then
     echo "Installed payload:"
-    verify "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib"  "$CANARY_launchd_hooks"  "launchd_hooks" || true
-    verify "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib" "$CANARY_xpcproxy_hooks" "xpcproxy_hooks" || true
-    verify "$INSTALL_ROOT/TI_TweakLoader.dylib"             "$CANARY_TI_TweakLoader" "TI_TweakLoader" || true
+    verify "$INSTALL_ROOT/LaunchdHook/LaunchdHooks.dylib"  "$CANARY_LaunchdHooks"  "LaunchdHooks" || true
+    verify "$INSTALL_ROOT/LaunchdHook/XpcProxyHooks.dylib" "$CANARY_XpcProxyHooks" "XpcProxyHooks" || true
+    verify "$INSTALL_ROOT/TI_TweakLoader.dylib"            "$CANARY_TI_TweakLoader" "TI_TweakLoader" || true
     exit 0
 fi
 
@@ -61,12 +61,12 @@ DD="$APP/Contents/Resources/Payload"
 echo "Source: $DD"
 
 echo "Verifying before install…"
-verify "$DD/LaunchdHook/launchd_hooks.dylib"  "$CANARY_launchd_hooks"  "launchd_hooks"
-verify "$DD/LaunchdHook/xpcproxy_hooks.dylib" "$CANARY_xpcproxy_hooks" "xpcproxy_hooks"
+verify "$DD/LaunchdHook/LaunchdHooks.dylib"  "$CANARY_LaunchdHooks"  "LaunchdHooks"
+verify "$DD/LaunchdHook/XpcProxyHooks.dylib" "$CANARY_XpcProxyHooks" "XpcProxyHooks"
 verify "$DD/TI_TweakLoader.dylib" "$CANARY_TI_TweakLoader" "TI_TweakLoader"
 
 # PID 1 is arm64e. A slice-less or arm64-only build silently fails to inject.
-for d in launchd_hooks xpcproxy_hooks; do
+for d in LaunchdHooks XpcProxyHooks; do
     lipo -archs "$DD/LaunchdHook/$d.dylib" | grep -q arm64e \
         || { echo "  ✗ $d.dylib has no arm64e slice — launchd will not load it"; exit 1; }
 done
@@ -74,8 +74,10 @@ echo "  ✓ arm64e slices present"
 
 echo "Installing (sudo)…"
 sudo mkdir -p "$INSTALL_ROOT/LaunchdHook" "$INSTALL_ROOT/SafeMode"
-sudo cp "$DD/LaunchdHook/launchd_hooks.dylib"  "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib"
-sudo cp "$DD/LaunchdHook/xpcproxy_hooks.dylib" "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib"
+sudo cp "$DD/LaunchdHook/LaunchdHooks.dylib"  "$INSTALL_ROOT/LaunchdHook/LaunchdHooks.dylib"
+sudo ln -sf "$INSTALL_ROOT/LaunchdHook/LaunchdHooks.dylib" "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib"
+sudo cp "$DD/LaunchdHook/XpcProxyHooks.dylib" "$INSTALL_ROOT/LaunchdHook/XpcProxyHooks.dylib"
+sudo ln -sf "$INSTALL_ROOT/LaunchdHook/XpcProxyHooks.dylib" "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib"
 sudo cp "$DD/TI_TweakLoader.dylib" "$INSTALL_ROOT/TI_TweakLoader.dylib"
 sudo ln -sf "$INSTALL_ROOT/TI_TweakLoader.dylib" "$INSTALL_ROOT/libtweakLoader.dylib"
 # Linked by tweaks for PSPreferences / PSUserDefaults.
@@ -92,10 +94,12 @@ fi
 
 # The pill lives beside the Safe Mode markers it advertises. Deploying the
 # loader without it leaves the loader dlopen()ing a path that does not exist.
-sudo cp "$DD/libsafeModePill.dylib" "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib"
-# libsafeMode.dylib lives beside the pill now: /Library/TweakInject/SafeMode
+sudo cp "$DD/SafeModePill.dylib" "$INSTALL_ROOT/SafeMode/SafeModePill.dylib"
+sudo ln -sf "$INSTALL_ROOT/SafeMode/SafeModePill.dylib" "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib"
+# SafeMode.dylib lives beside the pill now: /Library/TweakInject/SafeMode
 # holds the two Safe Mode dylibs and nothing else.
-sudo cp "$DD/libsafeMode.dylib" "$INSTALL_ROOT/SafeMode/libsafeMode.dylib"
+sudo cp "$DD/SafeMode.dylib" "$INSTALL_ROOT/SafeMode/SafeMode.dylib"
+sudo ln -sf "$INSTALL_ROOT/SafeMode/SafeMode.dylib" "$INSTALL_ROOT/SafeMode/libsafeMode.dylib"
 sudo rm -f "$INSTALL_ROOT/libsafeMode.dylib"
 # Runtime state no longer lives in a payload directory; the marker is
 # /var/run/tweakinject.safemode.
@@ -104,11 +108,11 @@ sudo rm -f "$INSTALL_ROOT/SafeMode/"*.txt
 sudo rm -f "$INSTALL_ROOT/libsafeModePill.dylib"
 sudo chown -R root:wheel "$INSTALL_ROOT/SafeMode"
 sudo chmod 755 "$INSTALL_ROOT/SafeMode"
-[ -f "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib"
-[ -f "$INSTALL_ROOT/SafeMode/libsafeMode.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/libsafeMode.dylib"
+[ -f "$INSTALL_ROOT/SafeMode/SafeModePill.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/SafeModePill.dylib"
+[ -f "$INSTALL_ROOT/SafeMode/SafeMode.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/SafeMode.dylib"
 
 echo "Verifying what is now installed…"
-verify "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib"  "$CANARY_launchd_hooks"  "launchd_hooks"
-verify "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib" "$CANARY_xpcproxy_hooks" "xpcproxy_hooks"
-verify "$INSTALL_ROOT/TI_TweakLoader.dylib"             "$CANARY_TI_TweakLoader" "TI_TweakLoader"
+verify "$INSTALL_ROOT/LaunchdHook/LaunchdHooks.dylib"  "$CANARY_LaunchdHooks"  "LaunchdHooks"
+verify "$INSTALL_ROOT/LaunchdHook/XpcProxyHooks.dylib" "$CANARY_XpcProxyHooks" "XpcProxyHooks"
+verify "$INSTALL_ROOT/TI_TweakLoader.dylib"            "$CANARY_TI_TweakLoader" "TI_TweakLoader"
 echo "Done. Re-hook launchd for this to take effect."

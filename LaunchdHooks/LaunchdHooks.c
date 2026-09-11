@@ -9,39 +9,105 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pthread.h>
-#include <dyld-interposing.h>
 #include <spawn.h>
+#include "DyldInterposing.h"
 
-/// Logging is OFF by default and should normally stay that way.
-///
-/// This code runs inside EVERY process that launches, logd included. os_log() from
-/// a constructor in logd deadlocks logd, and once logging is wedged the rest of the
-/// system follows — a machine in that state usually needs a reboot to recover.
-/// Enable only while debugging something you cannot reach otherwise, and only when
-/// you can afford to lose the box.
-#define ENABLE_LOGS 0
-
-#if ENABLE_LOGS
-#include <os/log.h>
-#define TL_LOG(fmt, ...) os_log(OS_LOG_DEFAULT, fmt, ##__VA_ARGS__)
-#else
-#define TL_LOG(fmt, ...) do {} while (0)
-#endif
-#include <dlfcn.h>
-#include <string.h>
-#include <stdlib.h>
+#include <sys/time.h>
+#include <time.h>
+#include <stdarg.h>
 #include <sys/stat.h>
+
+#define TWEAKINJECT_LOG_PATH     "/Library/TweakInject/logs/tweakinject.log"
+#define TWEAKINJECT_LOG_FALLBACK "/tmp/tweakinject.log"
+
+/// Safe, deadlock-free file logging that avoids os_log / logd IPC deadlocks.
+static void tl_safe_log(const char* fmt, ...) {
+    const char* prog = getprogname();
+    if (prog && (strcmp(prog, "logd") == 0 || strcmp(prog, "diagnosticd") == 0)) {
+        return;
+    }
+
+    char body[1024];
+    va_list args;
+    va_start(args, fmt);
+    int bodyLen = vsnprintf(body, sizeof(body) - 2, fmt, args);
+    va_end(args);
+
+    if (bodyLen <= 0) return;
+
+    if (body[bodyLen - 1] != '\n') {
+        body[bodyLen] = '\n';
+        body[bodyLen + 1] = '\0';
+        bodyLen++;
+    }
+
+    time_t now = time(NULL);
+    struct tm tm_buf;
+    localtime_r(&now, &tm_buf);
+    char timeStr[32];
+    strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &tm_buf);
+
+    char line[1280];
+    int lineLen = snprintf(line, sizeof(line), "[%s] [%s:%d] %s", timeStr, prog ? prog : "unknown", getpid(), body);
+    if (lineLen <= 0) return;
+
+    int fd = open(TWEAKINJECT_LOG_PATH, O_WRONLY | O_APPEND | O_CREAT | O_NONBLOCK | O_CLOEXEC, 0666);
+    if (fd < 0) {
+        fd = open(TWEAKINJECT_LOG_FALLBACK, O_WRONLY | O_APPEND | O_CREAT | O_NONBLOCK | O_CLOEXEC, 0666);
+    }
+    if (fd >= 0) {
+        fchmod(fd, 0666);
+        write(fd, line, (size_t)lineLen);
+        close(fd);
+    }
+}
+
+#define TL_LOG(fmt, ...) tl_safe_log(fmt, ##__VA_ARGS__)
+
+// Sandbox grants handed to every injected process.
+//
+// Adding one is a single line in the right array. A grant is needed whenever
+// injected code has to reach a path that a sandboxed host would otherwise be
+// confined away from -- the preference store below is exactly that case: the
+// tweak runs inside someone else's container, and without the grant its reads
+// and writes resolve nowhere useful.
+//
+// A sandbox grant is not a POSIX grant. The path must also be writable by the
+// uid that will write it; Preferences/Defaults is root:staff 775 for that
+// reason.
+static const char *const kSandboxRead[] = {
+    "/Library/TweakInject/",
+};
+
+static const char *const kSandboxReadWrite[] = {
+    "/Library/TweakInject/logs/",
+    "/Library/TweakInject/Preferences/Defaults/",
+};
+
+#define SANDBOX_READ_COUNT  (sizeof(kSandboxRead) / sizeof(*kSandboxRead))
+#define SANDBOX_RW_COUNT    (sizeof(kSandboxReadWrite) / sizeof(*kSandboxReadWrite))
+#define SANDBOX_GRANT_COUNT (SANDBOX_READ_COUNT + SANDBOX_RW_COUNT)
+
+static char *sandbox_tokens[SANDBOX_GRANT_COUNT];
+static size_t sandbox_token_count = 0;
+char* (* _sandbox_extension_issue_file)(const char*, const char*, uint32_t);
+
+#define XPCPROXY_HOOKS_DYLIB_PATH "/Library/TweakInject/LaunchdHook/XpcProxyHooks.dylib"
+#define LAUNCHD_HOOKS_DYLIB_PATH  "/Library/TweakInject/LaunchdHook/LaunchdHooks.dylib"
+#define TWEAK_LOADER_DYLIB_PATH   "/Library/TweakInject/TI_TweakLoader.dylib"
+#define ELLEKIT_DYLIB_PATH        "/Library/TweakInject/libellekit.dylib"
+#define TWEAK_INJECT_PATH         "/Library/TweakInject/"
+#define HOOKED_MARKER_PATH        "/var/run/tweakinject.hooked"
+
+#include <dlfcn.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 
-#define TWEAK_LOADER_DYLIB_PATH "/Library/TweakInject/TI_TweakLoader.dylib"
-
-// xpcproxy does not ISSUE grants -- launchd_hooks does, and hands them to us in
-// our own environment. We only forward them to whatever we exec, verbatim and
-// in order, so adding a grant to launchd_hooks' tables needs no change here.
-#define SANDBOX_TOKEN_MAX 16
-static char *sandbox_tokens[SANDBOX_TOKEN_MAX];
-static size_t sandbox_token_count = 0;
+static void (*_MSHookFunction)(void *symbol, void *replace, void **result);
+static void *orig_posix_spawn;
+static void *orig_posix_spawnp;
 
 static const char *process_blacklist[] = {
     // Core system log & diagnostics
@@ -124,9 +190,11 @@ static const char *process_blacklist[] = {
 #define INJECTION_DISABLED_DIR    "/Library/TweakInject/.disabled"
 
 static int is_injection_disabled(void) {
+    // 1. If tweakLoader dylib does not exist on disk, injection MUST NOT be armed
     if (access(TWEAK_LOADER_DYLIB_PATH, F_OK) != 0) {
         return 1;
     }
+    // 2. If explicit disabled marker exists (e.g. paused/suspended injection)
     if (access(INJECTION_DISABLED_MARKER, F_OK) == 0 || access(INJECTION_DISABLED_DIR, F_OK) == 0) {
         return 1;
     }
@@ -146,6 +214,8 @@ static char *const *strip_injection_env(char *const *__envp, char ***out_allocat
 
     size_t count = 0, dirty = 0;
     while (__envp[count] != NULL) {
+        // Prefix, not exact names: the tokens are TL_SANDBOX_TOKEN_0..N and the
+        // count changes whenever a grant is added to the tables above.
         if (strncmp(__envp[count], "DYLD_INSERT_LIBRARIES=", 22) == 0 ||
             strncmp(__envp[count], "TL_SANDBOX_TOKEN", 16) == 0 ||
             strncmp(__envp[count], "SANDBOX_TOKEN=", 14) == 0) {
@@ -172,6 +242,36 @@ static char *const *strip_injection_env(char *const *__envp, char ***out_allocat
     clean[dst] = NULL;
     *out_allocated = clean;
     return clean;
+}
+
+/// Append TL_SANDBOX_TOKEN_0..N-1 to a spawn's environment.
+///
+/// Numbered rather than one delimited variable: the tokens are opaque strings
+/// containing ';' and '/', and there is no separator that is safe against a
+/// format we do not control.
+///
+/// Returns the new write index. Each string it allocates is recorded in
+/// `allocated` so the caller can free them after the spawn.
+static size_t append_sandbox_tokens(char **new_envp, size_t dst,
+                                    char **allocated, size_t *allocated_count) {
+    for (size_t i = 0; i < sandbox_token_count; i++) {
+        size_t size = strlen(sandbox_tokens[i]) + sizeof("TL_SANDBOX_TOKEN_18446744073709551615=");
+        char *entry = malloc(size);
+        if (!entry) continue;
+        snprintf(entry, size, "TL_SANDBOX_TOKEN_%zu=%s", i, sandbox_tokens[i]);
+        allocated[(*allocated_count)++] = entry;
+        new_envp[dst++] = entry;
+    }
+    return dst;
+}
+
+static int is_setexec_attr(const posix_spawnattr_t *attrp) {
+    if (!attrp || !*attrp) return 0;
+    short flags = 0;
+    if (posix_spawnattr_getflags(attrp, &flags) == 0) {
+        return (flags & POSIX_SPAWN_SETEXEC) != 0;
+    }
+    return 0;
 }
 
 static int is_path_blacklisted_from_injection(const char *path) {
@@ -204,10 +304,10 @@ static int is_path_blacklisted_from_injection(const char *path) {
 // mapped into every process and its constructors still ran: Safe Mode described
 // what the loader declined to do rather than what was in the process. That is
 // the same mistake the per-process disable list used to make, and it costs more
-// here than anywhere else -- Safe Mode exists because something is already
-// broken, so the one thing that should be guaranteed absent is our own code.
+// here: a crashing tweak mapped into a critical process took the machine down
+// again before Safe Mode could run.
 //
-// One marker, root-owned, and deliberately NOT in /var/run: that directory is
+// Persistent, and deliberately NOT in /var/run. The contents of that directory are
 // wiped and repopulated on every userspace reboot, which is the exact operation
 // Safe Mode is built on -- write the marker, restart userspace, come up in Safe
 // Mode. A marker there is gone before anything can read it. (/var/run is right
@@ -219,6 +319,9 @@ static int is_path_blacklisted_from_injection(const char *path) {
 // leading dot keeps it out of the way of anything listing that directory.
 //
 // Checks BOTH the promoted marker AND the immediate tripwire request in /tmp.
+// When WindowServer or Dock crashes, launchd immediately respawns the daemon
+// before the helper has had time to promote the request to .safemode. Checking
+// the request file here closes that race window completely.
 static int is_safe_mode_active(void) {
     return (access(SAFE_MODE_MARKER_PATH, F_OK) == 0) ||
            (access(SAFE_MODE_REQUEST_PATH, F_OK) == 0);
@@ -540,33 +643,30 @@ static int is_process_injection_disabled_in_plist(const char *path) {
     return disabled;
 }
 
-static int posix_spawn_xpcproxy(pid_t * __restrict pid, const char * __restrict path, const posix_spawn_file_actions_t *file_actions, const posix_spawnattr_t * __restrict attrp, char *const __argv[__restrict], char *const __envp[__restrict], void *original_function) {
+static int posix_spawn_launchd(pid_t * __restrict pid, const char * __restrict path, const posix_spawn_file_actions_t *file_actions, const posix_spawnattr_t * __restrict attrp, char *const __argv[__restrict], char *const __envp[__restrict], void *original_function) {
     
     char *const *envp = __envp;
-    char *allocated_tokens[SANDBOX_TOKEN_MAX];
+    char *allocated_tokens[SANDBOX_GRANT_COUNT];
     size_t allocated_token_count = 0;
     char **allocated_envp = NULL;
+    int armed_injection = 0;
 
-    int should_hook = !is_path_blacklisted_from_injection(path) &&
-                      !is_injection_disabled() &&
-                      !is_process_injection_disabled_in_plist(path) &&
-                      !is_stripped_by_safe_mode(path) &&
-                      __envp != NULL;
+    const char *base_name = path ? strrchr(path, '/') : NULL;
+    base_name = base_name ? base_name + 1 : path;
+    int is_launchd_binary = (path && (strcmp(path, "/sbin/launchd") == 0 || (base_name && strcmp(base_name, "launchd") == 0)));
+    int is_reexec = is_setexec_attr(attrp) || getpid() == 1;
 
-    if (!should_hook) {
-        // This process is the reason the blacklist exists, and it is about to
-        // inherit our DYLD_INSERT_LIBRARIES from the xpcproxy that is exec'ing
-        // it. Take it back out.
-        envp = strip_injection_env(__envp, &allocated_envp);
-    }
-
-    if (should_hook) {
+    // 1. If PID 1 is re-executing itself (e.g. `launchctl reboot userspace`):
+    // Inject launchd_hooks.dylib into the new launchd image so hooks persist across userspace reboots!
+    if (is_launchd_binary && is_reexec && !is_injection_disabled()) {
+        char *dylib_to_inject = "DYLD_INSERT_LIBRARIES=" LAUNCHD_HOOKS_DYLIB_PATH;
+        
         size_t count = 0;
-        while (__envp[count] != NULL) {
-            count++;
+        if (__envp) {
+            while (__envp[count] != NULL) count++;
         }
-
-        char **new_envp = malloc((count + SANDBOX_TOKEN_MAX + 4) * sizeof(char *));
+        
+        char **new_envp = malloc((count + SANDBOX_GRANT_COUNT + 4) * sizeof(char *));
         if (new_envp) {
             size_t dst = 0;
             for (size_t i = 0; i < count; i++) {
@@ -575,25 +675,85 @@ static int posix_spawn_xpcproxy(pid_t * __restrict pid, const char * __restrict 
                 if (strncmp(__envp[i], "SANDBOX_TOKEN=", 14) == 0) continue;
                 new_envp[dst++] = __envp[i];
             }
-
-            new_envp[dst++] = "DYLD_INSERT_LIBRARIES=" TWEAK_LOADER_DYLIB_PATH;
-
-            for (size_t i = 0; i < sandbox_token_count; i++) {
-                size_t size = strlen(sandbox_tokens[i]) + sizeof("TL_SANDBOX_TOKEN_18446744073709551615=");
-                char *entry = malloc(size);
-                if (!entry) continue;
-                snprintf(entry, size, "TL_SANDBOX_TOKEN_%zu=%s", i, sandbox_tokens[i]);
-                allocated_tokens[allocated_token_count++] = entry;
-                new_envp[dst++] = entry;
-            }
-
+            
+            new_envp[dst++] = dylib_to_inject;
+            
+            dst = append_sandbox_tokens(new_envp, dst, allocated_tokens, &allocated_token_count);
+            
             new_envp[dst] = NULL;
             envp = new_envp;
             allocated_envp = new_envp;
+            armed_injection = 1;
+        }
+        TL_LOG("[LaunchdHook] Arming launchd_hooks injection for PID 1 re-exec (/sbin/launchd)");
+        goto exec;
+    }
+    
+    // The marker says "launchd_hooks is live in PID 1", which is true whether or
+    // not THIS spawn ends up armed -- so it is written before every early exit
+    // below. It used to sit after the strip branch, and /var/run is cleared
+    // during a userspace reboot AFTER the re-executed launchd has run its
+    // constructor: in Safe Mode almost every spawn takes that branch, so the
+    // marker was never rewritten and the app reported launchd as unhooked while
+    // it was plainly hooked.
+    if (access(HOOKED_MARKER_PATH, F_OK) != 0) {
+        int marker = open(HOOKED_MARKER_PATH, O_WRONLY | O_CREAT | O_TRUNC | O_NONBLOCK | O_CLOEXEC, 0644);
+        if (marker >= 0) close(marker);
+    }
+
+    // 2. Blacklisted or per-process disabled: strip all injection variables cleanly
+    if (is_path_blacklisted_from_injection(path) || is_injection_disabled() ||
+        is_process_injection_disabled_in_plist(path) || is_stripped_by_safe_mode(path)) {
+        envp = strip_injection_env(__envp, &allocated_envp);
+        goto exec;
+    }
+    
+    // 3. Regular daemons (WindowServer, etc.) & xpcproxy
+    if (path != NULL) {
+        int is_xpcproxy = strstr(path, "xpcproxy") != NULL;
+        if (is_xpcproxy && access(XPCPROXY_HOOKS_DYLIB_PATH, F_OK) != 0) {
+            goto exec;
+        }
+        char *dylib_to_inject = is_xpcproxy ? "DYLD_INSERT_LIBRARIES=" XPCPROXY_HOOKS_DYLIB_PATH : "DYLD_INSERT_LIBRARIES=" TWEAK_LOADER_DYLIB_PATH;
+        
+        size_t count = 0;
+        if (__envp != NULL) {
+            while (__envp[count] != NULL) {
+                count++;
+            }
+        }
+        
+        // Allocate space for cleaned entries + new injection vars + NULL terminator
+        char **new_envp = malloc((count + SANDBOX_GRANT_COUNT + 4) * sizeof(char *));
+        if (new_envp) {
+            size_t dst = 0;
+            if (__envp != NULL) {
+                for (size_t i = 0; i < count; i++) {
+                    // Deduplicate and strip any existing injection variables
+                    if (strncmp(__envp[i], "DYLD_INSERT_LIBRARIES=", 22) == 0) continue;
+                    if (strncmp(__envp[i], "TL_SANDBOX_TOKEN", 16) == 0) continue;
+                    if (strncmp(__envp[i], "SANDBOX_TOKEN=", 14) == 0) continue;
+                    new_envp[dst++] = __envp[i];
+                }
+            }
+            
+            new_envp[dst++] = dylib_to_inject;
+            
+            dst = append_sandbox_tokens(new_envp, dst, allocated_tokens, &allocated_token_count);
+            
+            new_envp[dst] = NULL;
+            envp = new_envp;
+            allocated_envp = new_envp;
+            armed_injection = 1;
         }
     }
 
+exec:;
     int ret = ((int (*)(pid_t * __restrict, const char * __restrict, const posix_spawn_file_actions_t *, const posix_spawnattr_t * __restrict, char *const __argv[__restrict], char *const __envp[__restrict]))original_function)(pid, path, file_actions, attrp, __argv, envp);
+    
+    if (ret == 0 && armed_injection && path) {
+        TL_LOG("[LaunchdHook] Armed tweakLoader injection for %s (pid %d)", path, pid ? *pid : 0);
+    }
 
     for (size_t i = 0; i < allocated_token_count; i++) {
         free(allocated_tokens[i]);
@@ -601,27 +761,68 @@ static int posix_spawn_xpcproxy(pid_t * __restrict pid, const char * __restrict 
     if (allocated_envp) {
         free(allocated_envp);
     }
-
+    
     return ret;
 }
 
 static int posix_spawn_hook(pid_t * __restrict pid, const char * __restrict path, const posix_spawn_file_actions_t *file_actions, const posix_spawnattr_t * __restrict attrp, char *const __argv[__restrict], char *const __envp[__restrict]) {
-    return posix_spawn_xpcproxy(pid, path, file_actions, attrp, __argv, __envp, posix_spawn);
+    return posix_spawn_launchd(pid, path, file_actions, attrp, __argv, __envp, orig_posix_spawn);
 }
 
 static int posix_spawnp_hook(pid_t * __restrict pid, const char * __restrict path, const posix_spawn_file_actions_t *file_actions, const posix_spawnattr_t * __restrict attrp, char *const __argv[__restrict], char *const __envp[__restrict]) {
-    return posix_spawn_xpcproxy(pid, path, file_actions, attrp, __argv, __envp, posix_spawnp);
+    return posix_spawn_launchd(pid, path, file_actions, attrp, __argv, __envp, orig_posix_spawnp);
 }
 
-DYLD_INTERPOSE(posix_spawn_hook, posix_spawn);
-DYLD_INTERPOSE(posix_spawnp_hook, posix_spawnp);
+/// Issue one token per table entry, once, at load.
+///
+/// The trailing-slash retry is kept from the hand-written version: issuing
+/// against a directory sometimes only succeeds without it, and a grant that
+/// silently fails costs a feature rather than announcing itself.
+static void issue_sandbox_tokens(void) {
+    if (!_sandbox_extension_issue_file) return;
 
-static void __attribute__((constructor)) init_xpcproxy_hooks(void) {
-    for (size_t i = 0; i < SANDBOX_TOKEN_MAX; i++) {
-        char name[64];
-        snprintf(name, sizeof(name), "TL_SANDBOX_TOKEN_%zu", i);
-        char *t = getenv(name);
-        if (!t) break;
-        sandbox_tokens[sandbox_token_count++] = strdup(t);
+    for (size_t i = 0; i < SANDBOX_READ_COUNT; i++) {
+        char *t = _sandbox_extension_issue_file("com.apple.app-sandbox.read", kSandboxRead[i], 0);
+        if (t) sandbox_tokens[sandbox_token_count++] = t;
+    }
+    for (size_t i = 0; i < SANDBOX_RW_COUNT; i++) {
+        char *t = _sandbox_extension_issue_file("com.apple.app-sandbox.read-write", kSandboxReadWrite[i], 0);
+        if (!t) {
+            char trimmed[1024];
+            size_t len = strlen(kSandboxReadWrite[i]);
+            if (len && len < sizeof(trimmed) && kSandboxReadWrite[i][len - 1] == '/') {
+                memcpy(trimmed, kSandboxReadWrite[i], len - 1);
+                trimmed[len - 1] = '\0';
+                t = _sandbox_extension_issue_file("com.apple.app-sandbox.read-write", trimmed, 0);
+            }
+        }
+        if (t) sandbox_tokens[sandbox_token_count++] = t;
+    }
+}
+
+static void __attribute__((constructor)) init_launchd_hooks(void) {
+    setenv("DYLD_INSERT_LIBRARIES", LAUNCHD_HOOKS_DYLIB_PATH, 1);
+    
+    void* libSystemSandboxHandle = dlopen("/usr/lib/system/libsystem_sandbox.dylib", RTLD_NOW);
+    if (libSystemSandboxHandle) {
+        _sandbox_extension_issue_file = dlsym(libSystemSandboxHandle, "sandbox_extension_issue_file");
+        if (_sandbox_extension_issue_file) {
+            issue_sandbox_tokens();
+        }
+    }
+    
+    void *EKHandle = dlopen(ELLEKIT_DYLIB_PATH, RTLD_NOW);
+    if (EKHandle) {
+        _MSHookFunction = dlsym(EKHandle, "MSHookFunction");
+        if (_MSHookFunction) {
+            _MSHookFunction((void *)posix_spawn, (void *)posix_spawn_hook, (void **)&orig_posix_spawn);
+            _MSHookFunction((void *)posix_spawnp, (void *)posix_spawnp_hook, (void **)&orig_posix_spawnp);
+
+            int marker = open(HOOKED_MARKER_PATH, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+            if (marker >= 0) {
+                close(marker);
+            }
+            TL_LOG("[LaunchdHook] Successfully hooked posix_spawn and posix_spawnp");
+        }
     }
 }
