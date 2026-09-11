@@ -34,7 +34,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define TWEAK_LOADER_DYLIB_PATH "/Library/TweakInject/libtweakLoader.dylib"
+#define TWEAK_LOADER_DYLIB_PATH "/Library/TweakInject/TI_TweakLoader.dylib"
 
 // xpcproxy does not ISSUE grants -- launchd_hooks does, and hands them to us in
 // our own environment. We only forward them to whatever we exec, verbatim and

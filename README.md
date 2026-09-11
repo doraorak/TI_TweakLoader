@@ -1,4 +1,4 @@
-# tweakLoader
+# TI_TweakLoader
 
 A tweak loader and injection suite for macOS on Apple silicon, built to work like
 its iOS counterparts while extending what a tweak can filter on.
@@ -12,16 +12,15 @@ its iOS counterparts while extending what a tweak can filter on.
 
 | Component | What it is |
 |---|---|
-| `tweakLoader/` | The dylib injected into every process. Enumerates filter plists, decides what loads, and `dlopen`s the matching tweaks. |
+| `tweakLoader/` | The dylib (`TI_TweakLoader.dylib`) injected into every process. Enumerates filter plists, decides what loads, and `dlopen`s the matching tweaks. |
 | `launchd_hooks/` | Hooks `posix_spawn` inside launchd so newly spawned processes inherit the loader. Also where per-process disable and Safe Mode are enforced. |
 | `xpcproxy_hooks/` | The same for `xpcproxy`, which is what actually execs most XPC services. |
-| `prefSupport/` | `libprefSupport.dylib` — the preference API tweaks link against. See [Preferences](#preferences). |
 | `safeMode/` | Crash tripwire loaded into critical processes, so a broken tweak cannot leave the machine unusable. |
 | `safeModePill/` | The menu bar indicator shown while Safe Mode is active, and the way out of it. |
 
 Disabling injection for a process, and Safe Mode itself, are enforced in the spawn
 hooks rather than in the loader: a stripped process never receives
-`libtweakLoader.dylib` at all, so there is nothing in it to go wrong.
+`TI_TweakLoader.dylib` at all, so there is nothing in it to go wrong.
 
 ## Filters
 

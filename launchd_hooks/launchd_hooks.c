@@ -94,7 +94,7 @@ char* (* _sandbox_extension_issue_file)(const char*, const char*, uint32_t);
 
 #define XPCPROXY_HOOKS_DYLIB_PATH "/Library/TweakInject/LaunchdHook/xpcproxy_hooks.dylib"
 #define LAUNCHD_HOOKS_DYLIB_PATH  "/Library/TweakInject/LaunchdHook/launchd_hooks.dylib"
-#define TWEAK_LOADER_DYLIB_PATH   "/Library/TweakInject/libtweakLoader.dylib"
+#define TWEAK_LOADER_DYLIB_PATH   "/Library/TweakInject/TI_TweakLoader.dylib"
 #define ELLEKIT_DYLIB_PATH        "/Library/TweakInject/libellekit.dylib"
 #define TWEAK_INJECT_PATH         "/Library/TweakInject/"
 #define HOOKED_MARKER_PATH        "/var/run/tweakinject.hooked"

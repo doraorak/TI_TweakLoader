@@ -19,7 +19,7 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT="$PROJECT_DIR/tweakLoader.xcodeproj"
+PROJECT="$PROJECT_DIR/TI_TweakLoader.xcodeproj"
 INSTALL_ROOT="/Library/TweakInject"
 APP_PAYLOAD="/Users/doraorak/Desktop/programming/XCode-projects/APP/My apps/TweakInjectApp/Payload"
 
@@ -27,7 +27,7 @@ APP_PAYLOAD="/Users/doraorak/Desktop/programming/XCode-projects/APP/My apps/Twea
 # build does not. Update these whenever the thing they prove changes.
 CANARY_launchd_hooks="SecurityAgent"
 CANARY_xpcproxy_hooks="SecurityAgent"
-CANARY_libtweakLoader="/Library/TweakInject/logs/tweakinject.log"
+CANARY_TI_TweakLoader="/Library/TweakInject/logs/tweakinject.log"
 
 products_dir() {
     xcodebuild -project "$PROJECT" -scheme "$1" -configuration Release \
@@ -51,7 +51,7 @@ if [ "${1:-}" = "--verify" ]; then
     echo "Installed payload:"
     verify "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib"  "$CANARY_launchd_hooks"  "launchd_hooks" || true
     verify "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib" "$CANARY_xpcproxy_hooks" "xpcproxy_hooks" || true
-    verify "$INSTALL_ROOT/libtweakLoader.dylib"             "$CANARY_libtweakLoader" "libtweakLoader" || true
+    verify "$INSTALL_ROOT/TI_TweakLoader.dylib"             "$CANARY_TI_TweakLoader" "TI_TweakLoader" || true
     exit 0
 fi
 
@@ -63,7 +63,7 @@ echo "Source: $DD"
 echo "Verifying before install…"
 verify "$DD/LaunchdHook/launchd_hooks.dylib"  "$CANARY_launchd_hooks"  "launchd_hooks"
 verify "$DD/LaunchdHook/xpcproxy_hooks.dylib" "$CANARY_xpcproxy_hooks" "xpcproxy_hooks"
-verify "$DD/libtweakLoader.dylib" "$CANARY_libtweakLoader" "libtweakLoader"
+verify "$DD/TI_TweakLoader.dylib" "$CANARY_TI_TweakLoader" "TI_TweakLoader"
 
 # PID 1 is arm64e. A slice-less or arm64-only build silently fails to inject.
 for d in launchd_hooks xpcproxy_hooks; do
@@ -76,9 +76,13 @@ echo "Installing (sudo)…"
 sudo mkdir -p "$INSTALL_ROOT/LaunchdHook" "$INSTALL_ROOT/SafeMode"
 sudo cp "$DD/LaunchdHook/launchd_hooks.dylib"  "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib"
 sudo cp "$DD/LaunchdHook/xpcproxy_hooks.dylib" "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib"
-sudo cp "$DD/libtweakLoader.dylib" "$INSTALL_ROOT/libtweakLoader.dylib"
+sudo cp "$DD/TI_TweakLoader.dylib" "$INSTALL_ROOT/TI_TweakLoader.dylib"
+sudo ln -sf "$INSTALL_ROOT/TI_TweakLoader.dylib" "$INSTALL_ROOT/libtweakLoader.dylib"
 # Linked by tweaks for PSPreferences / PSUserDefaults.
-sudo cp "$DD/libprefSupport.dylib" "$INSTALL_ROOT/libprefSupport.dylib"
+if [ -f "$DD/TI_PreferenceSupport.dylib" ]; then
+    sudo cp "$DD/TI_PreferenceSupport.dylib" "$INSTALL_ROOT/TI_PreferenceSupport.dylib"
+    sudo ln -sf "$INSTALL_ROOT/TI_PreferenceSupport.dylib" "$INSTALL_ROOT/libprefSupport.dylib"
+fi
 if [ -f "$DD/libellekit.dylib" ]; then
     sudo cp "$DD/libellekit.dylib" "$INSTALL_ROOT/libellekit.dylib"
     sudo mkdir -p /usr/local/lib
@@ -106,5 +110,5 @@ sudo chmod 755 "$INSTALL_ROOT/SafeMode"
 echo "Verifying what is now installed…"
 verify "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib"  "$CANARY_launchd_hooks"  "launchd_hooks"
 verify "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib" "$CANARY_xpcproxy_hooks" "xpcproxy_hooks"
-verify "$INSTALL_ROOT/libtweakLoader.dylib"             "$CANARY_libtweakLoader" "libtweakLoader"
+verify "$INSTALL_ROOT/TI_TweakLoader.dylib"             "$CANARY_TI_TweakLoader" "TI_TweakLoader"
 echo "Done. Re-hook launchd for this to take effect."

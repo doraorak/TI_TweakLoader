@@ -10,9 +10,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		14C40E622E017D1D00D07791 /* libtweakLoader.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libtweakLoader.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		14C40E622E017D1D00D07791 /* TI_TweakLoader.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = TI_TweakLoader.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		14C40E632E017D1D00D07791 /* libsafeMode.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libsafeMode.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		14FF000000000000000000A1 /* libprefSupport.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libprefSupport.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		14C40E642E017D1D00D07791 /* launchd_hooks.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = launchd_hooks.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		14C40E652E017D1D00D07791 /* xpcproxy_hooks.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = xpcproxy_hooks.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -28,11 +27,6 @@
 			path = safeMode;
 			sourceTree = "<group>";
 		};
-		14FF000000000000000000A2 /* prefSupport */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = prefSupport;
-			sourceTree = "<group>";
-		};
 		14BDD3DF2DA9C6D2009859FC /* launchd_hooks */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = launchd_hooks;
@@ -46,13 +40,6 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		14FF000000000000000000A5 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		146A30A92D9D43D4007097AB /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -88,28 +75,19 @@
 			isa = PBXGroup;
 			children = (
 				146A30AD2D9D43D4007097AB /* tweakLoader */,
-				14FF000000000000000000A2 /* prefSupport */,
 				146A30BC2D9DAAF6007097AB /* safeMode */,
 				14BDD3DF2DA9C6D2009859FC /* launchd_hooks */,
 				14BDD3FC2DA9C74C009859FC /* xpcproxy_hooks */,
-				14C40E622E017D1D00D07791 /* libtweakLoader.dylib */,
+				14C40E622E017D1D00D07791 /* TI_TweakLoader.dylib */,
 				14C40E632E017D1D00D07791 /* libsafeMode.dylib */,
 				14C40E642E017D1D00D07791 /* launchd_hooks.dylib */,
 				14C40E652E017D1D00D07791 /* xpcproxy_hooks.dylib */,
-				14FF000000000000000000A1 /* libprefSupport.dylib */,
 			);
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
-		14FF000000000000000000A3 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		146A30A72D9D43D4007097AB /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -141,28 +119,6 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		14FF000000000000000000A6 /* prefSupport */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 14FF000000000000000000A7 /* Build configuration list for PBXNativeTarget "prefSupport" */;
-			buildPhases = (
-				14FF000000000000000000A3 /* Headers */,
-				14FF000000000000000000A4 /* Sources */,
-				14FF000000000000000000A5 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				14FF000000000000000000A2 /* prefSupport */,
-			);
-			name = prefSupport;
-			packageProductDependencies = (
-			);
-			productName = prefSupport;
-			productReference = 14FF000000000000000000A1 /* libprefSupport.dylib */;
-			productType = "com.apple.product-type.library.dynamic";
-		};
 		146A30AA2D9D43D4007097AB /* tweakLoader */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 146A30B42D9D43D4007097AB /* Build configuration list for PBXNativeTarget "tweakLoader" */;
@@ -178,11 +134,11 @@
 			fileSystemSynchronizedGroups = (
 				146A30AD2D9D43D4007097AB /* tweakLoader */,
 			);
-			name = tweakLoader;
+			name = TI_TweakLoader;
 			packageProductDependencies = (
 			);
-			productName = tweakLoader;
-			productReference = 14C40E622E017D1D00D07791 /* libtweakLoader.dylib */;
+			productName = TI_TweakLoader;
+			productReference = 14C40E622E017D1D00D07791 /* TI_TweakLoader.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
 		146A30BA2D9DAAF6007097AB /* safeMode */ = {
@@ -294,7 +250,6 @@
 			targets = (
 				146A30AA2D9D43D4007097AB /* tweakLoader */,
 				146A30BA2D9DAAF6007097AB /* safeMode */,
-				14FF000000000000000000A6 /* prefSupport */,
 				14BDD3DD2DA9C6D2009859FC /* launchd_hooks */,
 				14BDD3EE2DA9C72D009859FC /* xpcproxy_hooks */,
 			);
@@ -302,13 +257,6 @@
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		14FF000000000000000000A4 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		146A30A82D9D43D4007097AB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -340,50 +288,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		14FF000000000000000000A8 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = arm64e;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 3FC7C2PF4P;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = /Library/TweakInject;
-				EXECUTABLE_PREFIX = lib;
-				OTHER_LDFLAGS = (
-					"-framework",
-					Foundation,
-					"-framework",
-					CoreFoundation,
-				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-			};
-			name = Debug;
-		};
-		14FF000000000000000000A9 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = arm64e;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 3FC7C2PF4P;
-				DYLIB_COMPATIBILITY_VERSION = 1;
-				DYLIB_CURRENT_VERSION = 1;
-				DYLIB_INSTALL_NAME_BASE = /Library/TweakInject;
-				EXECUTABLE_PREFIX = lib;
-				OTHER_LDFLAGS = (
-					"-framework",
-					Foundation,
-					"-framework",
-					CoreFoundation,
-				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-			};
-			name = Release;
-		};
 		146A30B22D9D43D4007097AB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -507,7 +411,8 @@
 				DEVELOPMENT_TEAM = 3FC7C2PF4P;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
-				EXECUTABLE_PREFIX = lib;
+				DYLIB_INSTALL_NAME_BASE = /Library/TweakInject;
+				EXECUTABLE_PREFIX = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -521,7 +426,8 @@
 				DEVELOPMENT_TEAM = 3FC7C2PF4P;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
-				EXECUTABLE_PREFIX = lib;
+				DYLIB_INSTALL_NAME_BASE = /Library/TweakInject;
+				EXECUTABLE_PREFIX = "";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -618,15 +524,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		14FF000000000000000000A7 /* Build configuration list for PBXNativeTarget "prefSupport" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				14FF000000000000000000A8 /* Debug */,
-				14FF000000000000000000A9 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		146A30A62D9D43D4007097AB /* Build configuration list for PBXProject "tweakLoader" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
