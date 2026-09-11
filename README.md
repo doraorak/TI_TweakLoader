@@ -129,7 +129,7 @@ does not depend on the app, and nothing here assumes a particular front-end.
 │   ├── denyInjectionList.plist
 │   └── installed_packages.plist
 ├── SafeMode/                  SafeMode.dylib, SafeModePill.dylib, and .safemode
-├── LaunchdHook/               LaunchdHooks.dylib and XpcProxyHooks.dylib
+├── LaunchdHook/               TI_LaunchdHooks.dylib and TI_XpcProxyHooks.dylib
 └── logs/
 ```
 
@@ -142,7 +142,7 @@ tweaks write their own preferences as the user.
 ## Building
 
 Open `TI_TweakLoader.xcodeproj` and set your own development team (the shipped project
-has it blank). Targets: `TI_TweakLoader`, `LaunchdHooks`, `XpcProxyHooks`,
+has it blank). Targets: `TI_TweakLoader`, `TI_LaunchdHooks`, `TI_XpcProxyHooks`,
 `SafeMode`. `SafeModePill` has no Xcode target — it is one file against
 Cocoa, built directly.
 

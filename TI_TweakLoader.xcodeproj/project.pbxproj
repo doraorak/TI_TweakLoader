@@ -12,8 +12,8 @@
 /* Begin PBXFileReference section */
 		14C40E622E017D1D00D07791 /* TI_TweakLoader.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = TI_TweakLoader.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		14C40E632E017D1D00D07791 /* SafeMode.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = SafeMode.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		14C40E642E017D1D00D07791 /* LaunchdHooks.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = LaunchdHooks.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		14C40E652E017D1D00D07791 /* XpcProxyHooks.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = XpcProxyHooks.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		14C40E642E017D1D00D07791 /* TI_LaunchdHooks.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = TI_LaunchdHooks.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		14C40E652E017D1D00D07791 /* TI_XpcProxyHooks.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = TI_XpcProxyHooks.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -80,8 +80,8 @@
 				14BDD3FC2DA9C74C009859FC /* XpcProxyHooks */,
 				14C40E622E017D1D00D07791 /* TI_TweakLoader.dylib */,
 				14C40E632E017D1D00D07791 /* SafeMode.dylib */,
-				14C40E642E017D1D00D07791 /* LaunchdHooks.dylib */,
-				14C40E652E017D1D00D07791 /* XpcProxyHooks.dylib */,
+				14C40E642E017D1D00D07791 /* TI_LaunchdHooks.dylib */,
+				14C40E652E017D1D00D07791 /* TI_XpcProxyHooks.dylib */,
 			);
 			sourceTree = "<group>";
 		};
@@ -163,9 +163,9 @@
 			productReference = 14C40E632E017D1D00D07791 /* SafeMode.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
-		14BDD3DD2DA9C6D2009859FC /* LaunchdHooks */ = {
+		14BDD3DD2DA9C6D2009859FC /* TI_LaunchdHooks */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 14BDD3E42DA9C6D2009859FC /* Build configuration list for PBXNativeTarget "LaunchdHooks" */;
+			buildConfigurationList = 14BDD3E42DA9C6D2009859FC /* Build configuration list for PBXNativeTarget "TI_LaunchdHooks" */;
 			buildPhases = (
 				14BDD3DA2DA9C6D2009859FC /* Headers */,
 				14BDD3DB2DA9C6D2009859FC /* Sources */,
@@ -178,16 +178,16 @@
 			fileSystemSynchronizedGroups = (
 				14BDD3DF2DA9C6D2009859FC /* LaunchdHooks */,
 			);
-			name = LaunchdHooks;
+			name = TI_LaunchdHooks;
 			packageProductDependencies = (
 			);
-			productName = LaunchdHooks;
-			productReference = 14C40E642E017D1D00D07791 /* LaunchdHooks.dylib */;
+			productName = TI_LaunchdHooks;
+			productReference = 14C40E642E017D1D00D07791 /* TI_LaunchdHooks.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
-		14BDD3EE2DA9C72D009859FC /* XpcProxyHooks */ = {
+		14BDD3EE2DA9C72D009859FC /* TI_XpcProxyHooks */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 14BDD3F52DA9C72D009859FC /* Build configuration list for PBXNativeTarget "XpcProxyHooks" */;
+			buildConfigurationList = 14BDD3F52DA9C72D009859FC /* Build configuration list for PBXNativeTarget "TI_XpcProxyHooks" */;
 			buildPhases = (
 				14BDD3EB2DA9C72D009859FC /* Headers */,
 				14BDD3EC2DA9C72D009859FC /* Sources */,
@@ -200,11 +200,11 @@
 			fileSystemSynchronizedGroups = (
 				14BDD3FC2DA9C74C009859FC /* XpcProxyHooks */,
 			);
-			name = XpcProxyHooks;
+			name = TI_XpcProxyHooks;
 			packageProductDependencies = (
 			);
-			productName = XpcProxyHooks;
-			productReference = 14C40E652E017D1D00D07791 /* XpcProxyHooks.dylib */;
+			productName = TI_XpcProxyHooks;
+			productReference = 14C40E652E017D1D00D07791 /* TI_XpcProxyHooks.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
 /* End PBXNativeTarget section */
@@ -250,8 +250,8 @@
 			targets = (
 				146A30AA2D9D43D4007097AB /* TI_TweakLoader */,
 				146A30BA2D9DAAF6007097AB /* SafeMode */,
-				14BDD3DD2DA9C6D2009859FC /* LaunchdHooks */,
-				14BDD3EE2DA9C72D009859FC /* XpcProxyHooks */,
+				14BDD3DD2DA9C6D2009859FC /* TI_LaunchdHooks */,
+				14BDD3EE2DA9C72D009859FC /* TI_XpcProxyHooks */,
 			);
 		};
 /* End PBXProject section */
@@ -551,7 +551,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		14BDD3E42DA9C6D2009859FC /* Build configuration list for PBXNativeTarget "LaunchdHooks" */ = {
+		14BDD3E42DA9C6D2009859FC /* Build configuration list for PBXNativeTarget "TI_LaunchdHooks" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				14BDD3E52DA9C6D2009859FC /* Debug */,
@@ -560,7 +560,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		14BDD3F52DA9C72D009859FC /* Build configuration list for PBXNativeTarget "XpcProxyHooks" */ = {
+		14BDD3F52DA9C72D009859FC /* Build configuration list for PBXNativeTarget "TI_XpcProxyHooks" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				14BDD3F62DA9C72D009859FC /* Debug */,

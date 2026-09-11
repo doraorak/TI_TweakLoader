@@ -92,8 +92,8 @@ static char *sandbox_tokens[SANDBOX_GRANT_COUNT];
 static size_t sandbox_token_count = 0;
 char* (* _sandbox_extension_issue_file)(const char*, const char*, uint32_t);
 
-#define XPCPROXY_HOOKS_DYLIB_PATH "/Library/TweakInject/LaunchdHook/XpcProxyHooks.dylib"
-#define LAUNCHD_HOOKS_DYLIB_PATH  "/Library/TweakInject/LaunchdHook/LaunchdHooks.dylib"
+#define XPCPROXY_HOOKS_DYLIB_PATH "/Library/TweakInject/LaunchdHook/TI_XpcProxyHooks.dylib"
+#define LAUNCHD_HOOKS_DYLIB_PATH  "/Library/TweakInject/LaunchdHook/TI_LaunchdHooks.dylib"
 #define TWEAK_LOADER_DYLIB_PATH   "/Library/TweakInject/TI_TweakLoader.dylib"
 #define ELLEKIT_DYLIB_PATH        "/Library/TweakInject/libellekit.dylib"
 #define TWEAK_INJECT_PATH         "/Library/TweakInject/"

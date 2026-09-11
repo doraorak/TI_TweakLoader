@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "14BDD3EE2DA9C72D009859FC"
-               BuildableName = "XpcProxyHooks.dylib"
-               BlueprintName = "XpcProxyHooks"
+               BuildableName = "TI_XpcProxyHooks.dylib"
+               BlueprintName = "TI_XpcProxyHooks"
                ReferencedContainer = "container:TI_TweakLoader.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>

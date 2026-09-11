@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "14BDD3DD2DA9C6D2009859FC"
-               BuildableName = "LaunchdHooks.dylib"
-               BlueprintName = "LaunchdHooks"
+               BuildableName = "TI_LaunchdHooks.dylib"
+               BlueprintName = "TI_LaunchdHooks"
                ReferencedContainer = "container:TI_TweakLoader.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
