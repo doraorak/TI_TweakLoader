@@ -36,9 +36,9 @@
 
 #define TWEAK_LOADER_DYLIB_PATH "/Library/TweakInject/TI_TweakLoader.dylib"
 
-// xpcproxy does not ISSUE grants -- launchd_hooks does, and hands them to us in
+// xpcproxy does not ISSUE grants -- TI_LaunchdHooks does, and hands them to us in
 // our own environment. We only forward them to whatever we exec, verbatim and
-// in order, so adding a grant to launchd_hooks' tables needs no change here.
+// in order, so adding a grant to TI_LaunchdHooks' tables needs no change here.
 #define SANDBOX_TOKEN_MAX 16
 static char *sandbox_tokens[SANDBOX_TOKEN_MAX];
 static size_t sandbox_token_count = 0;
@@ -102,7 +102,7 @@ static const char *process_blacklist[] = {
     // yet cannot be validated and dyld aborts the process. These are
     // boot-critical, and a boot-critical task dying panics the kernel exactly
     // the way PID 1 does -- measured, as mount[1668] taking the machine down
-    // over libtweakLoader.dylib. ldrestart pre-warms the signatures to stop
+    // over TI_TweakLoader.dylib. ldrestart pre-warms the signatures to stop
     // that happening at all; this list is the belt to that pair of braces, and
     // costs nothing, since none of these is anybody's tweak target.
     "mount",
@@ -225,7 +225,7 @@ static int is_safe_mode_active(void) {
 }
 
 // The one exception. Safe Mode has to be able to say so on screen, and the
-// indicator is itself an injected tweak -- libsafeModePill.dylib, which
+// indicator is itself an injected tweak -- TI_SafeModePill.dylib, which
 // tweakLoader dlopens here. This host keeps the loader; every other gate still
 // applies to it, and tweakLoader's own Safe Mode check stops it loading
 // anything besides the pill.

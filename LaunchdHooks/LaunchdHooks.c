@@ -168,7 +168,7 @@ static const char *process_blacklist[] = {
     // yet cannot be validated and dyld aborts the process. These are
     // boot-critical, and a boot-critical task dying panics the kernel exactly
     // the way PID 1 does -- measured, as mount[1668] taking the machine down
-    // over libtweakLoader.dylib. ldrestart pre-warms the signatures to stop
+    // over TI_TweakLoader.dylib. ldrestart pre-warms the signatures to stop
     // that happening at all; this list is the belt to that pair of braces, and
     // costs nothing, since none of these is anybody's tweak target.
     "mount",
@@ -328,7 +328,7 @@ static int is_safe_mode_active(void) {
 }
 
 // The one exception. Safe Mode has to be able to say so on screen, and the
-// indicator is itself an injected tweak -- libsafeModePill.dylib, which
+// indicator is itself an injected tweak -- TI_SafeModePill.dylib, which
 // tweakLoader dlopens here. This host keeps the loader; every other gate still
 // applies to it, and tweakLoader's own Safe Mode check stops it loading
 // anything besides the pill.
@@ -657,7 +657,7 @@ static int posix_spawn_launchd(pid_t * __restrict pid, const char * __restrict p
     int is_reexec = is_setexec_attr(attrp) || getpid() == 1;
 
     // 1. If PID 1 is re-executing itself (e.g. `launchctl reboot userspace`):
-    // Inject launchd_hooks.dylib into the new launchd image so hooks persist across userspace reboots!
+    // Inject TI_LaunchdHooks.dylib into the new launchd image so hooks persist across userspace reboots!
     if (is_launchd_binary && is_reexec && !is_injection_disabled()) {
         char *dylib_to_inject = "DYLD_INSERT_LIBRARIES=" LAUNCHD_HOOKS_DYLIB_PATH;
         
@@ -685,11 +685,11 @@ static int posix_spawn_launchd(pid_t * __restrict pid, const char * __restrict p
             allocated_envp = new_envp;
             armed_injection = 1;
         }
-        TL_LOG("[LaunchdHook] Arming launchd_hooks injection for PID 1 re-exec (/sbin/launchd)");
+        TL_LOG("[LaunchdHook] Arming TI_LaunchdHooks injection for PID 1 re-exec (/sbin/launchd)");
         goto exec;
     }
     
-    // The marker says "launchd_hooks is live in PID 1", which is true whether or
+    // The marker says "TI_LaunchdHooks is live in PID 1", which is true whether or
     // not THIS spawn ends up armed -- so it is written before every early exit
     // below. It used to sit after the strip branch, and /var/run is cleared
     // during a userspace reboot AFTER the re-executed launchd has run its

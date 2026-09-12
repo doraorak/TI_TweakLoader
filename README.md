@@ -59,9 +59,9 @@ A tweak injected into a sandboxed app cannot use the stock preferences API to re
 shared store: `NSUserDefaults` hands it that app's container, so the tweak's settings
 fragment per host process.
 
-`libprefSupport.dylib` reads and writes `/Library/TweakInject/Preferences/Defaults`
+`TI_PreferenceSupport.dylib` reads and writes `/Library/TweakInject/Preferences/Defaults`
 directly, at a fixed absolute path, so every process sees the same store regardless of
-container or uid. The store is `root:staff 775`, and `launchd_hooks` issues a sandbox
+container or uid. The store is `root:staff 775`, and `TI_LaunchdHooks` issues a sandbox
 extension over it per injected process.
 
 Two surfaces, mirroring the shapes they replace:
@@ -77,8 +77,8 @@ BOOL on = [d boolForKey:@"Enabled"];
 `PSPreferences` mirrors the CoreFoundation functions (`PSPreferencesCopyAppValue`,
 `PSPreferencesSetAppValue`) for tweaks written against that style.
 
-Link with `-L/Library/TweakInject -lprefSupport`. The install name is the absolute
-`/Library/TweakInject/libprefSupport.dylib`, so dyld resolves it there at load time —
+Link with `-L/Library/TweakInject -lTI_PreferenceSupport`. The install name is the absolute
+`/Library/TweakInject/TI_PreferenceSupport.dylib`, so dyld resolves it there at load time —
 no search path, no `@rpath`.
 
 There is deliberately no `standardUserDefaults` equivalent. A tweak is a guest in
@@ -92,8 +92,8 @@ Two steps, because a loader that only affects processes started *after* it is
 installed is not much use:
 
 1. **Inject the launchd hook.** [Dylinject](https://github.com/doraorak/Dylinject)
-   loads `launchd_hooks.dylib` into launchd (pid 1). From then on every process
-   launchd spawns inherits `libtweakLoader.dylib`.
+   loads `TI_LaunchdHooks.dylib` into launchd (pid 1). From then on every process
+   launchd spawns inherits `TI_TweakLoader.dylib`.
 2. **Catch what was already running.** Everything alive before step 1 has no loader
    in it. A userspace restart (`launchctl reboot userspace`) brings those processes
    back with it, without rebooting the kernel.

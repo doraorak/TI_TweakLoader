@@ -538,7 +538,7 @@ __attribute__((constructor)) static void tl_init_tweak_loader(void) {
     if (lib_sandbox_handle) {
         _sandbox_extension_consume = dlsym(lib_sandbox_handle, "sandbox_extension_consume");
         if (_sandbox_extension_consume) {
-            // TL_SANDBOX_TOKEN_0..N-1, one per entry in launchd_hooks' grant
+            // TL_SANDBOX_TOKEN_0..N-1, one per entry in TI_LaunchdHooks' grant
             // tables. Consume until the first gap rather than a fixed pair, so
             // adding a grant there needs no change here.
             int consumed = 0;
