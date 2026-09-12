@@ -32,13 +32,13 @@
 #define tl_bundles_path          "/Library/TweakInject/Tweaks/Bundles/"
 #define tl_dylibs_path           "/Library/TweakInject/Tweaks/DynamicLibraries/"
 #define tl_safe_mode_dir         "/Library/TweakInject/SafeMode/"
-#define tl_safe_mode_dylib_path  tl_safe_mode_dir "SafeMode.dylib"
-#define tl_safe_mode_pill_path   tl_safe_mode_dir "SafeModePill.dylib"
+#define tl_safe_mode_dylib_path  tl_safe_mode_dir "TI_SafeMode.dylib"
+#define tl_safe_mode_pill_path   tl_safe_mode_dir "TI_SafeModePill.dylib"
 // Persistent, not /var/run: that is cleared by the userspace reboot Safe Mode
 // uses to take effect. Mirrors /Library/TweakInject/.disabled.
 #define tl_safe_mode_marker      tl_safe_mode_dir ".safemode"
 #define tl_safe_mode_request     "/tmp/.tweakinject-safemode-request"
-#define tl_deny_list_path        "/Library/TweakInject/Config/denyInjectionList.plist"
+#define tl_deny_list_path        "/Library/TweakInject/Config/denyInjectionTweaks.plist"
 #define tl_per_proc_tweaks_path  "/Library/TweakInject/Config/perProcessTweaks.plist"
 
 /// Safe, deadlock-free file logging that avoids os_log / logd IPC deadlocks.

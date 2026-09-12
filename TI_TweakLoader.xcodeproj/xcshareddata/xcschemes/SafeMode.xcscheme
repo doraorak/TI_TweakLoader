@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "146A30BA2D9DAAF6007097AB"
-               BuildableName = "SafeMode.dylib"
+               BuildableName = "TI_SafeMode.dylib"
                BlueprintName = "SafeMode"
                ReferencedContainer = "container:TI_TweakLoader.xcodeproj">
             </BuildableReference>

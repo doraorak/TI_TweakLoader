@@ -82,39 +82,16 @@ if [ -f "$DD/TI_PreferenceSupport.dylib" ]; then
 fi
 if [ -f "$DD/TI_Ellekit.dylib" ]; then
     sudo cp "$DD/TI_Ellekit.dylib" "$INSTALL_ROOT/TI_Ellekit.dylib"
-    sudo mkdir -p /usr/local/lib
-    sudo cp "$DD/TI_Ellekit.dylib" /usr/local/lib/TI_Ellekit.dylib
 fi
 
-# The pill lives beside the Safe Mode markers it advertises. Deploying the
-# loader without it leaves the loader dlopen()ing a path that does not exist.
-sudo cp "$DD/SafeModePill.dylib" "$INSTALL_ROOT/SafeMode/SafeModePill.dylib"
-# SafeMode.dylib lives beside the pill now: /Library/TweakInject/SafeMode
-# holds the two Safe Mode dylibs and nothing else.
-sudo cp "$DD/SafeMode.dylib" "$INSTALL_ROOT/SafeMode/SafeMode.dylib"
+# The pill lives beside the Safe Mode markers it advertises.
+sudo cp "$DD/TI_SafeModePill.dylib" "$INSTALL_ROOT/SafeMode/TI_SafeModePill.dylib"
+sudo cp "$DD/TI_SafeMode.dylib" "$INSTALL_ROOT/SafeMode/TI_SafeMode.dylib"
 
-# Purge any legacy symlinks or old filenames
-sudo rm -f "$INSTALL_ROOT/LaunchdHook/LaunchdHooks.dylib" \
-           "$INSTALL_ROOT/LaunchdHook/launchd_hooks.dylib" \
-           "$INSTALL_ROOT/LaunchdHook/XpcProxyHooks.dylib" \
-           "$INSTALL_ROOT/LaunchdHook/xpcproxy_hooks.dylib" \
-           "$INSTALL_ROOT/libtweakLoader.dylib" \
-           "$INSTALL_ROOT/libprefSupport.dylib" \
-           "$INSTALL_ROOT/libsafeMode.dylib" \
-           "$INSTALL_ROOT/libsafeModePill.dylib" \
-           "$INSTALL_ROOT/libellekit.dylib" \
-           /usr/local/lib/libellekit.dylib \
-           "$INSTALL_ROOT/SafeMode/libsafeMode.dylib" \
-           "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib"
-# Runtime state no longer lives in a payload directory; the marker is
-# /var/run/tweakinject.safemode.
-sudo rm -f "$INSTALL_ROOT/SafeMode/"*.txt
-# It used to live in the payload root; nothing loads it from there any more.
-sudo rm -f "$INSTALL_ROOT/libsafeModePill.dylib"
 sudo chown -R root:wheel "$INSTALL_ROOT/SafeMode"
 sudo chmod 755 "$INSTALL_ROOT/SafeMode"
-[ -f "$INSTALL_ROOT/SafeMode/SafeModePill.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/SafeModePill.dylib"
-[ -f "$INSTALL_ROOT/SafeMode/SafeMode.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/SafeMode.dylib"
+[ -f "$INSTALL_ROOT/SafeMode/TI_SafeModePill.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/TI_SafeModePill.dylib"
+[ -f "$INSTALL_ROOT/SafeMode/TI_SafeMode.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/TI_SafeMode.dylib"
 
 echo "Verifying what is now installed…"
 verify "$INSTALL_ROOT/LaunchdHook/TI_LaunchdHooks.dylib"  "$CANARY_TI_LaunchdHooks"  "TI_LaunchdHooks"

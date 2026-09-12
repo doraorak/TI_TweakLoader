@@ -126,9 +126,9 @@ does not depend on the app, and nothing here assumes a particular front-end.
 │   └── PreferencePanes/
 ├── Config/
 │   ├── perProcessTweaks.plist per-process enable/disable
-│   ├── denyInjectionList.plist
-│   └── installed_packages.plist
-├── SafeMode/                  SafeMode.dylib, SafeModePill.dylib, and .safemode
+│   ├── denyInjectionTweaks.plist
+│   └── installedPackages.plist
+├── SafeMode/                  TI_SafeMode.dylib, TI_SafeModePill.dylib, and .safemode
 ├── LaunchdHook/               TI_LaunchdHooks.dylib and TI_XpcProxyHooks.dylib
 └── logs/
 ```
