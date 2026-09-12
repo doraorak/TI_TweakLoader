@@ -800,7 +800,7 @@ static void issue_sandbox_tokens(void) {
     }
 }
 
-static void __attribute__((constructor)) init_launchd_hooks(void) {
+static void __attribute__((constructor)) init_ti_launchd_hooks(void) {
     setenv("DYLD_INSERT_LIBRARIES", LAUNCHD_HOOKS_DYLIB_PATH, 1);
     
     void* libSystemSandboxHandle = dlopen("/usr/lib/system/libsystem_sandbox.dylib", RTLD_NOW);
