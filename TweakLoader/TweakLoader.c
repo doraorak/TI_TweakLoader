@@ -562,8 +562,8 @@ __attribute__((constructor)) static void tl_init_tweak_loader(void) {
         TL_LOG("[TweakLoader] Injection is suspended, skipping");
         return;
     }
-    if (access("/Library/TweakInject/libellekit.dylib", F_OK) != 0) {
-        TL_LOG("[TweakLoader] Essential dependency libellekit.dylib is missing, skipping");
+    if (access("/Library/TweakInject/TI_Ellekit.dylib", F_OK) != 0) {
+        TL_LOG("[TweakLoader] Essential dependency TI_Ellekit.dylib is missing, skipping");
         return;
     }
 

@@ -113,9 +113,9 @@ does not depend on the app, and nothing here assumes a particular front-end.
 
 ```
 /Library/TweakInject/
-├── TI_TweakLoader.dylib (symlinked to libtweakLoader.dylib)
-├── TI_PreferenceSupport.dylib (symlinked to libprefSupport.dylib)
-├── libellekit.dylib
+├── TI_TweakLoader.dylib
+├── TI_PreferenceSupport.dylib
+├── TI_Ellekit.dylib
 ├── Tweaks/
 │   ├── DynamicLibraries/      tweak dylibs + their filter plists
 │   └── Bundles/               self-contained .bundle tweaks

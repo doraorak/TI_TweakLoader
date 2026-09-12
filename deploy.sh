@@ -80,10 +80,10 @@ sudo cp "$DD/TI_TweakLoader.dylib" "$INSTALL_ROOT/TI_TweakLoader.dylib"
 if [ -f "$DD/TI_PreferenceSupport.dylib" ]; then
     sudo cp "$DD/TI_PreferenceSupport.dylib" "$INSTALL_ROOT/TI_PreferenceSupport.dylib"
 fi
-if [ -f "$DD/libellekit.dylib" ]; then
-    sudo cp "$DD/libellekit.dylib" "$INSTALL_ROOT/libellekit.dylib"
+if [ -f "$DD/TI_Ellekit.dylib" ]; then
+    sudo cp "$DD/TI_Ellekit.dylib" "$INSTALL_ROOT/TI_Ellekit.dylib"
     sudo mkdir -p /usr/local/lib
-    sudo cp "$DD/libellekit.dylib" /usr/local/lib/libellekit.dylib
+    sudo cp "$DD/TI_Ellekit.dylib" /usr/local/lib/TI_Ellekit.dylib
 fi
 
 # The pill lives beside the Safe Mode markers it advertises. Deploying the
@@ -102,6 +102,8 @@ sudo rm -f "$INSTALL_ROOT/LaunchdHook/LaunchdHooks.dylib" \
            "$INSTALL_ROOT/libprefSupport.dylib" \
            "$INSTALL_ROOT/libsafeMode.dylib" \
            "$INSTALL_ROOT/libsafeModePill.dylib" \
+           "$INSTALL_ROOT/libellekit.dylib" \
+           /usr/local/lib/libellekit.dylib \
            "$INSTALL_ROOT/SafeMode/libsafeMode.dylib" \
            "$INSTALL_ROOT/SafeMode/libsafeModePill.dylib"
 # Runtime state no longer lives in a payload directory; the marker is
