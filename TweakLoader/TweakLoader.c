@@ -487,35 +487,50 @@ static bool tl_find_bundle_executable(const char* bundle_path, char* out_exec_pa
 static CFPropertyListRef tl_read_bundle_filter(const char* bundle_path, const char* tweak_name) {
     char path[1024];
 
-    // 1. Contents/Resources/Filter.plist
+    // 1. Contents/Info.plist (checked FIRST if it contains a "Filter" dictionary)
+    snprintf(path, sizeof(path), "%s/Contents/Info.plist", bundle_path);
+    if (access(path, F_OK) == 0) {
+        CFPropertyListRef plist = tl_read_plist_file(path);
+        if (plist) {
+            if (CFGetTypeID(plist) == CFDictionaryGetTypeID()) {
+                CFDictionaryRef filter_dict = (CFDictionaryRef)CFDictionaryGetValue((CFDictionaryRef)plist, CFSTR("Filter"));
+                if (filter_dict && CFGetTypeID(filter_dict) == CFDictionaryGetTypeID()) {
+                    return plist;
+                }
+            }
+            CFRelease(plist);
+        }
+    }
+
+    // 2. Contents/Resources/Filter.plist
     snprintf(path, sizeof(path), "%s/Contents/Resources/Filter.plist", bundle_path);
     if (access(path, F_OK) == 0) {
         CFPropertyListRef plist = tl_read_plist_file(path);
         if (plist) return plist;
     }
 
-    // 2. Contents/Filter.plist
+    // 3. Contents/Filter.plist
     snprintf(path, sizeof(path), "%s/Contents/Filter.plist", bundle_path);
     if (access(path, F_OK) == 0) {
         CFPropertyListRef plist = tl_read_plist_file(path);
         if (plist) return plist;
     }
 
-    // 3. Contents/Resources/<TweakName>.plist
+    // 4. Contents/Resources/<TweakName>.plist
     snprintf(path, sizeof(path), "%s/Contents/Resources/%s.plist", bundle_path, tweak_name);
     if (access(path, F_OK) == 0) {
         CFPropertyListRef plist = tl_read_plist_file(path);
         if (plist) return plist;
     }
 
-    // 4. Outside <TweakName>.plist
+    // 5. Outside <TweakName>.plist
     snprintf(path, sizeof(path), "%s%s.plist", tl_bundles_path, tweak_name);
     if (access(path, F_OK) == 0) {
         CFPropertyListRef plist = tl_read_plist_file(path);
         if (plist) return plist;
     }
 
-    // 5. Contents/Info.plist
+    // 6. Contents/Info.plist (fallback without requiring "Filter" key)
     snprintf(path, sizeof(path), "%s/Contents/Info.plist", bundle_path);
     if (access(path, F_OK) == 0) {
         CFPropertyListRef plist = tl_read_plist_file(path);
