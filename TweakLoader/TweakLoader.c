@@ -483,7 +483,10 @@ static bool tl_find_bundle_executable(const char* bundle_path, char* out_exec_pa
     return false;
 }
 
-/// Helper to find and read filter plist inside or alongside a .bundle
+/// Helper to find and read a .bundle's filter plist. Every candidate is INSIDE
+/// the bundle: a filter sitting beside it could be swapped without touching the
+/// signed bundle, so a bundle's targeting is only ever what the bundle itself
+/// carries. TweakManager.swift mirrors this list and its order exactly.
 static CFPropertyListRef tl_read_bundle_filter(const char* bundle_path, const char* tweak_name) {
     char path[1024];
 
@@ -523,8 +526,8 @@ static CFPropertyListRef tl_read_bundle_filter(const char* bundle_path, const ch
         if (plist) return plist;
     }
 
-    // 5. Outside <TweakName>.plist
-    snprintf(path, sizeof(path), "%s%s.plist", tl_bundles_path, tweak_name);
+    // 5. Contents/<TweakName>.plist
+    snprintf(path, sizeof(path), "%s/Contents/%s.plist", bundle_path, tweak_name);
     if (access(path, F_OK) == 0) {
         CFPropertyListRef plist = tl_read_plist_file(path);
         if (plist) return plist;
