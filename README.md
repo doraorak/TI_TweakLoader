@@ -102,9 +102,8 @@ The hook has to be re-injected after each boot.
 
 [TweakInject](https://github.com/doraorak/TweakInject) is the macOS app built on this
 and drives all of it from a GUI — install, inject, userspace restart, per-process
-rules, Safe Mode and tweak management — so none of it needs doing by hand. Its
-package repository is
-[TweakInject-Store](https://github.com/doraorak/TweakInject-Store).
+rules, Safe Mode and tweak management — so none of it needs doing by hand. It
+ships with a signed package store of its own.
 
 This repository is the engine underneath: the app depends on the loader, the loader
 does not depend on the app, and nothing here assumes a particular front-end.
