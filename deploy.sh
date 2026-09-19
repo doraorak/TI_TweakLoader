@@ -76,9 +76,9 @@ echo "Installing (sudo)…"
 sudo cp "$DD/LaunchdHook/TI_LaunchdHooks.dylib"  "$INSTALL_ROOT/LaunchdHook/TI_LaunchdHooks.dylib"
 sudo cp "$DD/LaunchdHook/TI_XpcProxyHooks.dylib" "$INSTALL_ROOT/LaunchdHook/TI_XpcProxyHooks.dylib"
 sudo cp "$DD/TI_TweakLoader.dylib" "$INSTALL_ROOT/TI_TweakLoader.dylib"
-# Linked by tweaks for PSPreferences / PSUserDefaults.
-if [ -f "$DD/TI_PreferenceSupport.dylib" ]; then
-    sudo cp "$DD/TI_PreferenceSupport.dylib" "$INSTALL_ROOT/TI_PreferenceSupport.dylib"
+# Linked by tweaks for PSPreferences / PSUserDefaults / TILicense.
+if [ -f "$DD/TI_Support.dylib" ]; then
+    sudo cp "$DD/TI_Support.dylib" "$INSTALL_ROOT/TI_Support.dylib"
 fi
 if [ -f "$DD/TI_Ellekit.dylib" ]; then
     sudo cp "$DD/TI_Ellekit.dylib" "$INSTALL_ROOT/TI_Ellekit.dylib"

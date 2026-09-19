@@ -59,7 +59,7 @@ A tweak injected into a sandboxed app cannot use the stock preferences API to re
 shared store: `NSUserDefaults` hands it that app's container, so the tweak's settings
 fragment per host process.
 
-`TI_PreferenceSupport.dylib` reads and writes `/Library/TweakInject/Preferences/Defaults`
+`TI_Support.dylib` reads and writes `/Library/TweakInject/Preferences/Defaults`
 directly, at a fixed absolute path, so every process sees the same store regardless of
 container or uid. The store is `root:staff 775`, and `TI_LaunchdHooks` issues a sandbox
 extension over it per injected process.
@@ -77,8 +77,8 @@ BOOL on = [d boolForKey:@"Enabled"];
 `PSPreferences` mirrors the CoreFoundation functions (`PSPreferencesCopyAppValue`,
 `PSPreferencesSetAppValue`) for tweaks written against that style.
 
-Link with `-L/Library/TweakInject -lTI_PreferenceSupport`. The install name is the absolute
-`/Library/TweakInject/TI_PreferenceSupport.dylib`, so dyld resolves it there at load time —
+Link with `-L/Library/TweakInject -lTI_Support`. The install name is the absolute
+`/Library/TweakInject/TI_Support.dylib`, so dyld resolves it there at load time —
 no search path, no `@rpath`.
 
 There is deliberately no `standardUserDefaults` equivalent. A tweak is a guest in
@@ -113,7 +113,7 @@ does not depend on the app, and nothing here assumes a particular front-end.
 ```
 /Library/TweakInject/
 ├── TI_TweakLoader.dylib
-├── TI_PreferenceSupport.dylib
+├── TI_Support.dylib
 ├── TI_Ellekit.dylib
 ├── Tweaks/
 │   ├── DynamicLibraries/      tweak dylibs + their filter plists
