@@ -406,7 +406,7 @@
 		146A30B52D9D43D4007097AB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = arm64e;
+				ARCHS = "x86_64 arm64 arm64e";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 3FC7C2PF4P;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -421,7 +421,7 @@
 		146A30B62D9D43D4007097AB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = arm64e;
+				ARCHS = "x86_64 arm64 arm64e";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 3FC7C2PF4P;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -436,11 +436,12 @@
 		146A30C22D9DAAF6007097AB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = arm64e;
+				ARCHS = "x86_64 arm64 arm64e";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 3FC7C2PF4P;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = /Library/TweakInject;
 				EXECUTABLE_PREFIX = "";
 				PRODUCT_NAME = TI_SafeMode;
 				SKIP_INSTALL = YES;
@@ -450,11 +451,12 @@
 		146A30C32D9DAAF6007097AB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = arm64e;
+				ARCHS = "x86_64 arm64 arm64e";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 3FC7C2PF4P;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = /Library/TweakInject;
 				EXECUTABLE_PREFIX = "";
 				PRODUCT_NAME = TI_SafeMode;
 				SKIP_INSTALL = YES;
