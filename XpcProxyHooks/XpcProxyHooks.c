@@ -97,6 +97,21 @@ static const char *process_blacklist[] = {
     // which is what froze a Cloudflare checkbox, and what left processes alive
     // through shutdown until the watchdog reset the machine.
     "MTLCompilerService",
+    // Apple system services that break when injected, and that no tweak
+    // targets. Metal's other background tools:
+    "MTLReplayer",
+    "MTLAssetUpgraderD",
+    // Wi-Fi:
+    "airportd",
+    "WiFiAgent",
+    "WiFiCloudAssetsXPCService",
+    "wifianalyticsd",
+    "wifip2pd",
+    // Network extensions and VPN sessions:
+    "neagent",
+    "nesessionmanager",
+    // Safari's platform helper:
+    "com.apple.SafariPlatformSupport.Helper",
     // Early-boot filesystem tools. launchd runs these to bring the volumes up
     // BEFORE it starts amfid, so a code signature the kernel has not cached
     // yet cannot be validated and dyld aborts the process. These are
