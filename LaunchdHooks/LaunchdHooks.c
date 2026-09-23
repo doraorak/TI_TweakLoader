@@ -176,8 +176,6 @@ static const char *process_blacklist[] = {
     // Network extensions and VPN sessions:
     "neagent",
     "nesessionmanager",
-    // Safari's platform helper:
-    "com.apple.SafariPlatformSupport.Helper",
     // Early-boot filesystem tools. launchd runs these to bring the volumes up
     // BEFORE it starts amfid, so a code signature the kernel has not cached
     // yet cannot be validated and dyld aborts the process. These are
