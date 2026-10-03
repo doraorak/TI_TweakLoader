@@ -5,7 +5,7 @@
 #import <stdio.h>
 #import <string.h>
 
-#define SAFE_MODE_MARKER "/Library/TweakInject/SafeMode/.safemode"
+#define SAFE_MODE_MARKER "/Library/TweakInject/Internal/SafeMode/.safemode"
 // Watched by the helper's LaunchDaemon. Dropping this file is how an
 // unprivileged injected dylib asks for a privileged action: launchd starts the
 // helper, which clears the marker and restarts userspace.

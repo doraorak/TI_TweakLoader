@@ -34,7 +34,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#define TWEAK_LOADER_DYLIB_PATH "/Library/TweakInject/TI_TweakLoader.dylib"
+#define TWEAK_LOADER_DYLIB_PATH "/Library/TweakInject/Internal/TI_TweakLoader.dylib"
 
 // xpcproxy does not ISSUE grants -- TI_LaunchdHooks does, and hands them to us in
 // our own environment. We only forward them to whatever we exec, verbatim and
@@ -208,7 +208,7 @@ static int is_path_blacklisted_from_injection(const char *path) {
     return 0;
 }
 
-#define SAFE_MODE_MARKER_PATH  "/Library/TweakInject/SafeMode/.safemode"
+#define SAFE_MODE_MARKER_PATH  "/Library/TweakInject/Internal/SafeMode/.safemode"
 #define SAFE_MODE_REQUEST_PATH "/tmp/.tweakinject-safemode-request"
 
 // Safe Mode is enforced HERE now, not inside the loader.
@@ -314,7 +314,7 @@ static int is_stripped_by_safe_mode(const char *path) {
     return 1;
 }
 
-#define PER_PROCESS_TWEAKS_PLIST_PATH "/Library/TweakInject/Config/perProcessTweaks.plist"
+#define PER_PROCESS_TWEAKS_PLIST_PATH "/Library/TweakInject/Internal/Config/perProcessTweaks.plist"
 
 // The parsed form of perProcessTweaks.plist: ONLY the keys whose entry carries
 // TweakInjectionDisabled=true. Nothing else in that file matters at spawn time

@@ -17,7 +17,7 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 
-#define TWEAKINJECT_LOG_PATH     "/Library/TweakInject/logs/tweakinject.log"
+#define TWEAKINJECT_LOG_PATH     "/Library/TweakInject/Internal/logs/tweakinject.log"
 #define TWEAKINJECT_LOG_FALLBACK "/tmp/tweakinject.log"
 
 /// Safe, deadlock-free file logging that avoids os_log / logd IPC deadlocks.
@@ -80,7 +80,7 @@ static const char *const kSandboxRead[] = {
 };
 
 static const char *const kSandboxReadWrite[] = {
-    "/Library/TweakInject/logs/",
+    "/Library/TweakInject/Internal/logs/",
     "/Library/TweakInject/Preferences/Defaults/",
 };
 
@@ -92,10 +92,10 @@ static char *sandbox_tokens[SANDBOX_GRANT_COUNT];
 static size_t sandbox_token_count = 0;
 char* (* _sandbox_extension_issue_file)(const char*, const char*, uint32_t);
 
-#define XPCPROXY_HOOKS_DYLIB_PATH "/Library/TweakInject/LaunchdHook/TI_XpcProxyHooks.dylib"
-#define LAUNCHD_HOOKS_DYLIB_PATH  "/Library/TweakInject/LaunchdHook/TI_LaunchdHooks.dylib"
-#define TWEAK_LOADER_DYLIB_PATH   "/Library/TweakInject/TI_TweakLoader.dylib"
-#define ELLEKIT_DYLIB_PATH        "/Library/TweakInject/TI_Ellekit.dylib"
+#define XPCPROXY_HOOKS_DYLIB_PATH "/Library/TweakInject/Internal/LaunchdHook/TI_XpcProxyHooks.dylib"
+#define LAUNCHD_HOOKS_DYLIB_PATH  "/Library/TweakInject/Internal/LaunchdHook/TI_LaunchdHooks.dylib"
+#define TWEAK_LOADER_DYLIB_PATH   "/Library/TweakInject/Internal/TI_TweakLoader.dylib"
+#define ELLEKIT_DYLIB_PATH        "/Library/TweakInject/Internal/TI_Ellekit.dylib"
 #define TWEAK_INJECT_PATH         "/Library/TweakInject/"
 #define HOOKED_MARKER_PATH        "/var/run/tweakinject.hooked"
 
@@ -308,7 +308,7 @@ static int is_path_blacklisted_from_injection(const char *path) {
     return 0;
 }
 
-#define SAFE_MODE_MARKER_PATH  "/Library/TweakInject/SafeMode/.safemode"
+#define SAFE_MODE_MARKER_PATH  "/Library/TweakInject/Internal/SafeMode/.safemode"
 #define SAFE_MODE_REQUEST_PATH "/tmp/.tweakinject-safemode-request"
 
 // Safe Mode is enforced HERE now, not inside the loader.
@@ -417,7 +417,7 @@ static int is_stripped_by_safe_mode(const char *path) {
     return 1;
 }
 
-#define PER_PROCESS_TWEAKS_PLIST_PATH "/Library/TweakInject/Config/perProcessTweaks.plist"
+#define PER_PROCESS_TWEAKS_PLIST_PATH "/Library/TweakInject/Internal/Config/perProcessTweaks.plist"
 
 // The parsed form of perProcessTweaks.plist: ONLY the keys whose entry carries
 // TweakInjectionDisabled=true. Nothing else in that file matters at spawn time

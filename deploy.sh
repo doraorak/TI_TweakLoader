@@ -27,7 +27,7 @@ APP_PAYLOAD="/Users/doraorak/Desktop/programming/XCode-projects/APP/My apps/Twea
 # build does not. Update these whenever the thing they prove changes.
 CANARY_TI_LaunchdHooks="SecurityAgent"
 CANARY_TI_XpcProxyHooks="SecurityAgent"
-CANARY_TI_TweakLoader="/Library/TweakInject/logs/tweakinject.log"
+CANARY_TI_TweakLoader="/Library/TweakInject/Internal/logs/tweakinject.log"
 
 products_dir() {
     xcodebuild -project "$PROJECT" -scheme "$1" -configuration Release \
@@ -49,9 +49,9 @@ verify() {
 
 if [ "${1:-}" = "--verify" ]; then
     echo "Installed payload:"
-    verify "$INSTALL_ROOT/LaunchdHook/TI_LaunchdHooks.dylib"  "$CANARY_TI_LaunchdHooks"  "TI_LaunchdHooks" || true
-    verify "$INSTALL_ROOT/LaunchdHook/TI_XpcProxyHooks.dylib" "$CANARY_TI_XpcProxyHooks" "TI_XpcProxyHooks" || true
-    verify "$INSTALL_ROOT/TI_TweakLoader.dylib"               "$CANARY_TI_TweakLoader"    "TI_TweakLoader" || true
+    verify "$INSTALL_ROOT/Internal/LaunchdHook/TI_LaunchdHooks.dylib"  "$CANARY_TI_LaunchdHooks"  "TI_LaunchdHooks" || true
+    verify "$INSTALL_ROOT/Internal/LaunchdHook/TI_XpcProxyHooks.dylib" "$CANARY_TI_XpcProxyHooks" "TI_XpcProxyHooks" || true
+    verify "$INSTALL_ROOT/Internal/TI_TweakLoader.dylib"               "$CANARY_TI_TweakLoader"    "TI_TweakLoader" || true
     exit 0
 fi
 
@@ -73,28 +73,28 @@ done
 echo "  ✓ arm64e slices present"
 
 echo "Installing (sudo)…"
-sudo cp "$DD/LaunchdHook/TI_LaunchdHooks.dylib"  "$INSTALL_ROOT/LaunchdHook/TI_LaunchdHooks.dylib"
-sudo cp "$DD/LaunchdHook/TI_XpcProxyHooks.dylib" "$INSTALL_ROOT/LaunchdHook/TI_XpcProxyHooks.dylib"
-sudo cp "$DD/TI_TweakLoader.dylib" "$INSTALL_ROOT/TI_TweakLoader.dylib"
+sudo cp "$DD/LaunchdHook/TI_LaunchdHooks.dylib"  "$INSTALL_ROOT/Internal/LaunchdHook/TI_LaunchdHooks.dylib"
+sudo cp "$DD/LaunchdHook/TI_XpcProxyHooks.dylib" "$INSTALL_ROOT/Internal/LaunchdHook/TI_XpcProxyHooks.dylib"
+sudo cp "$DD/TI_TweakLoader.dylib" "$INSTALL_ROOT/Internal/TI_TweakLoader.dylib"
 # Linked by tweaks for PSPreferences / PSUserDefaults / TILicense.
 if [ -f "$DD/TI_Support.dylib" ]; then
-    sudo cp "$DD/TI_Support.dylib" "$INSTALL_ROOT/TI_Support.dylib"
+    sudo cp "$DD/TI_Support.dylib" "$INSTALL_ROOT/Internal/TI_Support.dylib"
 fi
 if [ -f "$DD/TI_Ellekit.dylib" ]; then
-    sudo cp "$DD/TI_Ellekit.dylib" "$INSTALL_ROOT/TI_Ellekit.dylib"
+    sudo cp "$DD/TI_Ellekit.dylib" "$INSTALL_ROOT/Internal/TI_Ellekit.dylib"
 fi
 
 # The pill lives beside the Safe Mode markers it advertises.
-sudo cp "$DD/TI_SafeModePill.dylib" "$INSTALL_ROOT/SafeMode/TI_SafeModePill.dylib"
-sudo cp "$DD/TI_SafeMode.dylib" "$INSTALL_ROOT/SafeMode/TI_SafeMode.dylib"
+sudo cp "$DD/TI_SafeModePill.dylib" "$INSTALL_ROOT/Internal/SafeMode/TI_SafeModePill.dylib"
+sudo cp "$DD/TI_SafeMode.dylib" "$INSTALL_ROOT/Internal/SafeMode/TI_SafeMode.dylib"
 
-sudo chown -R root:wheel "$INSTALL_ROOT/SafeMode"
-sudo chmod 755 "$INSTALL_ROOT/SafeMode"
-[ -f "$INSTALL_ROOT/SafeMode/TI_SafeModePill.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/TI_SafeModePill.dylib"
-[ -f "$INSTALL_ROOT/SafeMode/TI_SafeMode.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/SafeMode/TI_SafeMode.dylib"
+sudo chown -R root:wheel "$INSTALL_ROOT/Internal/SafeMode"
+sudo chmod 755 "$INSTALL_ROOT/Internal/SafeMode"
+[ -f "$INSTALL_ROOT/Internal/SafeMode/TI_SafeModePill.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/Internal/SafeMode/TI_SafeModePill.dylib"
+[ -f "$INSTALL_ROOT/Internal/SafeMode/TI_SafeMode.dylib" ] && sudo chmod 755 "$INSTALL_ROOT/Internal/SafeMode/TI_SafeMode.dylib"
 
 echo "Verifying what is now installed…"
-verify "$INSTALL_ROOT/LaunchdHook/TI_LaunchdHooks.dylib"  "$CANARY_TI_LaunchdHooks"  "TI_LaunchdHooks"
-verify "$INSTALL_ROOT/LaunchdHook/TI_XpcProxyHooks.dylib" "$CANARY_TI_XpcProxyHooks" "TI_XpcProxyHooks"
-verify "$INSTALL_ROOT/TI_TweakLoader.dylib"               "$CANARY_TI_TweakLoader"    "TI_TweakLoader"
+verify "$INSTALL_ROOT/Internal/LaunchdHook/TI_LaunchdHooks.dylib"  "$CANARY_TI_LaunchdHooks"  "TI_LaunchdHooks"
+verify "$INSTALL_ROOT/Internal/LaunchdHook/TI_XpcProxyHooks.dylib" "$CANARY_TI_XpcProxyHooks" "TI_XpcProxyHooks"
+verify "$INSTALL_ROOT/Internal/TI_TweakLoader.dylib"               "$CANARY_TI_TweakLoader"    "TI_TweakLoader"
 echo "Done. Re-hook launchd for this to take effect."

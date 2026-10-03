@@ -78,7 +78,7 @@ BOOL on = [d boolForKey:@"Enabled"];
 `PSPreferencesSetAppValue`) for tweaks written against that style.
 
 Link with `-L/Library/TweakInject -lTI_Support`. The install name is the absolute
-`/Library/TweakInject/TI_Support.dylib`, so dyld resolves it there at load time —
+`/Library/TweakInject/Internal/TI_Support.dylib`, so dyld resolves it there at load time —
 no search path, no `@rpath`.
 
 There is deliberately no `standardUserDefaults` equivalent. A tweak is a guest in
@@ -148,7 +148,7 @@ Cocoa, built directly.
 Or build a component by hand:
 
 ```bash
-clang -dynamiclib -arch arm64e -install_name /Library/TweakInject/TI_TweakLoader.dylib \
+clang -dynamiclib -arch arm64e -install_name /Library/TweakInject/Internal/TI_TweakLoader.dylib \
   -framework CoreFoundation -lobjc -o TI_TweakLoader.dylib TweakLoader/TweakLoader.c
 ```
 

@@ -26,20 +26,20 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define tl_log_path              "/Library/TweakInject/logs/tweakinject.log"
+#define tl_log_path              "/Library/TweakInject/Internal/logs/tweakinject.log"
 #define tl_log_fallback          "/tmp/tweakinject.log"
 #define tl_active_path           "/tmp/.tweakloader_active"
 #define tl_bundles_path          "/Library/TweakInject/Tweaks/Bundles/"
 #define tl_dylibs_path           "/Library/TweakInject/Tweaks/DynamicLibraries/"
-#define tl_safe_mode_dir         "/Library/TweakInject/SafeMode/"
+#define tl_safe_mode_dir         "/Library/TweakInject/Internal/SafeMode/"
 #define tl_safe_mode_dylib_path  tl_safe_mode_dir "TI_SafeMode.dylib"
 #define tl_safe_mode_pill_path   tl_safe_mode_dir "TI_SafeModePill.dylib"
 // Persistent, not /var/run: that is cleared by the userspace reboot Safe Mode
 // uses to take effect. Mirrors /Library/TweakInject/.disabled.
 #define tl_safe_mode_marker      tl_safe_mode_dir ".safemode"
 #define tl_safe_mode_request     "/tmp/.tweakinject-safemode-request"
-#define tl_deny_list_path        "/Library/TweakInject/Config/denyInjectionTweaks.plist"
-#define tl_per_proc_tweaks_path  "/Library/TweakInject/Config/perProcessTweaks.plist"
+#define tl_deny_list_path        "/Library/TweakInject/Internal/Config/denyInjectionTweaks.plist"
+#define tl_per_proc_tweaks_path  "/Library/TweakInject/Internal/Config/perProcessTweaks.plist"
 
 /// Safe, deadlock-free file logging that avoids os_log / logd IPC deadlocks.
 static void tl_safe_log(const char* fmt, ...) {
@@ -580,7 +580,7 @@ __attribute__((constructor)) static void tl_init_tweak_loader(void) {
         TL_LOG("[TweakLoader] Injection is suspended, skipping");
         return;
     }
-    if (access("/Library/TweakInject/TI_Ellekit.dylib", F_OK) != 0) {
+    if (access("/Library/TweakInject/Internal/TI_Ellekit.dylib", F_OK) != 0) {
         TL_LOG("[TweakLoader] Essential dependency TI_Ellekit.dylib is missing, skipping");
         return;
     }
