@@ -6,6 +6,8 @@
 //
 //  System-wide dynamic tweak loader for macOS.
 //  Injected via launchd / DYLD_INSERT_LIBRARIES early in the process lifecycle before main().
+//  Processes launchd did not start -- anything an injected process spawns -- are armed by
+//  this loader's own posix_spawn hook.
 //
 
 #include <CoreFoundation/CoreFoundation.h>
@@ -25,6 +27,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <spawn.h>
+#include "../Shared/DyldInterposing.h"
+#include "../Shared/ProcessBlacklist.h"
 
 #define tl_log_path              "/Library/TweakInject/Internal/logs/tweakinject.log"
 #define tl_log_fallback          "/tmp/tweakinject.log"
@@ -38,6 +44,11 @@
 // uses to take effect. Mirrors /Library/TweakInject/.disabled.
 #define tl_safe_mode_marker      tl_safe_mode_dir ".safemode"
 #define tl_safe_mode_request     "/tmp/.tweakinject-safemode-request"
+#define tl_loader_path           "/Library/TweakInject/Internal/TI_TweakLoader.dylib"
+// Either one suspends injection: the first is cleared by a reboot, the second persists.
+#define tl_suspended_marker      "/var/run/tweakinject.disabled"
+#define tl_suspended_dir         "/Library/TweakInject/.disabled"
+#define tl_dyld_insert           "DYLD_INSERT_LIBRARIES="
 #define tl_deny_list_path        "/Library/TweakInject/Internal/Config/denyInjectionTweaks.plist"
 #define tl_per_proc_tweaks_path  "/Library/TweakInject/Internal/Config/perProcessTweaks.plist"
 
@@ -545,11 +556,154 @@ static CFPropertyListRef tl_read_bundle_filter(const char* bundle_path, const ch
 
 static int64_t (*_sandbox_extension_consume)(const char* token) = NULL;
 
+// MARK: - Child Injection
+
+// A process launchd did not start is not armed by anything, so the loader arms
+// the ones it starts itself. The spawn hooks' gates apply to those children
+// unchanged, and they are evaluated on every spawn: injection toggled off (or
+// on) takes effect with the very next process, not the next login.
+
+static int tl_safe_boot = 0;
+
+static bool tl_injection_suspended(void) {
+    return access(tl_suspended_marker, F_OK) == 0 || access(tl_suspended_dir, F_OK) == 0;
+}
+
+static bool tl_plist_entry_disabled(CFDictionaryRef plist, const char* key) {
+    CFStringRef cf_key = CFStringCreateWithCString(kCFAllocatorDefault, key, kCFStringEncodingUTF8);
+    if (!cf_key) return false;
+    CFTypeRef entry = CFDictionaryGetValue(plist, cf_key);
+    CFRelease(cf_key);
+    if (!entry || CFGetTypeID(entry) != CFDictionaryGetTypeID()) return false;
+    return CFDictionaryGetValue((CFDictionaryRef)entry, CFSTR("TweakInjectionDisabled")) == kCFBooleanTrue;
+}
+
+/// TweakInjectionDisabled in perProcessTweaks.plist, keyed the way the spawn hooks match it:
+/// full path, executable name, enclosing .app path, app name.
+// ponytail: re-read on every spawn, no mtime cache; add one if a spawn-heavy host shows it.
+static bool tl_child_disabled_in_plist(const char* path) {
+    CFPropertyListRef plist = tl_read_plist_file(tl_per_proc_tweaks_path);
+    if (!plist) return false;
+
+    bool disabled = false;
+    if (CFGetTypeID(plist) == CFDictionaryGetTypeID()) {
+        const char* base = strrchr(path, '/');
+        base = base ? base + 1 : path;
+        disabled = tl_plist_entry_disabled(plist, path) || tl_plist_entry_disabled(plist, base);
+
+        const char* app_ext = strstr(path, ".app/");
+        char app_path[1024];
+        size_t app_len = app_ext ? (size_t)(app_ext - path) + 4 : 0;
+        if (!disabled && app_len > 0 && app_len < sizeof(app_path)) {
+            memcpy(app_path, path, app_len);
+            app_path[app_len] = '\0';
+            disabled = tl_plist_entry_disabled(plist, app_path);
+
+            const char* slash = strrchr(app_path, '/');
+            const char* name = slash ? slash + 1 : app_path;
+            char app_name[256];
+            size_t name_len = strlen(name) - 4;
+            if (!disabled && name_len < sizeof(app_name)) {
+                memcpy(app_name, name, name_len);
+                app_name[name_len] = '\0';
+                disabled = tl_plist_entry_disabled(plist, app_name);
+            }
+        }
+    }
+    CFRelease(plist);
+    return disabled;
+}
+
+/// An iOS app running on the Mac (Instagram and the like, in a Wrapper). The same test ThemeEngine-UI
+/// uses to keep its function hooks out of them: such a process is killed for a patched code page, so
+/// the spawn hook stays a pass-through there. Such an app does not spawn processes anyway.
+static bool tl_is_ios_app(void) {
+    static int cached = -1;
+    if (cached < 0) {
+        char exec_path[PROC_PIDPATHINFO_MAXSIZE] = {0};
+        bool ios = proc_pidpath(getpid(), exec_path, sizeof(exec_path)) > 0 && strstr(exec_path, "/Wrapper/");
+        CFBundleRef bundle = CFBundleGetMainBundle();
+        cached = ios || (bundle && CFBundleGetValueForInfoDictionaryKey(bundle, CFSTR("LSRequiresIPhoneOS")));
+    }
+    return cached;
+}
+
+static bool tl_child_may_inject(const char* path) {
+    if (!path || tl_injection_suspended() || tl_safe_boot) return false;
+    // A loader that is gone would abort the child at launch: dyld cannot load an inserted dylib that is missing.
+    if (access(tl_loader_path, F_OK) != 0) return false;
+    if (access(tl_safe_mode_marker, F_OK) == 0 || access(tl_safe_mode_request, F_OK) == 0) return false;
+    return !is_path_blacklisted_from_injection(path) && !tl_child_disabled_in_plist(path);
+}
+
+/// envp with the loader first in DYLD_INSERT_LIBRARIES, keeping anything the caller already
+/// inserts (a debugger's sanitizer, say). Returns NULL when envp is fine as it is or the
+/// allocation failed. On success the caller frees the result and *out_entry.
+static char** tl_env_with_loader(char* const* envp, char** out_entry) {
+    const size_t key_len = sizeof(tl_dyld_insert) - 1;
+    size_t count = 0, at = SIZE_MAX;
+    for (; envp[count]; count++) {
+        if (at == SIZE_MAX && strncmp(envp[count], tl_dyld_insert, key_len) == 0) at = count;
+    }
+
+    const char* existing = at == SIZE_MAX ? NULL : envp[at] + key_len;
+    if (existing && !existing[0]) existing = NULL;
+    if (existing && strstr(existing, tl_loader_path)) return NULL;
+
+    char* entry = NULL;
+    int made = existing ? asprintf(&entry, tl_dyld_insert "%s:%s", tl_loader_path, existing)
+                        : asprintf(&entry, tl_dyld_insert "%s", tl_loader_path);
+    if (made < 0) return NULL;
+
+    char** patched = malloc((count + 2) * sizeof(char*));
+    if (!patched) {
+        free(entry);
+        return NULL;
+    }
+    memcpy(patched, envp, count * sizeof(char*));
+    if (at == SIZE_MAX) at = count++;
+    patched[at] = entry;
+    patched[count] = NULL;
+    *out_entry = entry;
+    return patched;
+}
+
+typedef int (*tl_spawn_fn)(pid_t* __restrict, const char* __restrict, const posix_spawn_file_actions_t*, const posix_spawnattr_t* __restrict, char* const[__restrict], char* const[__restrict]);
+
+static int tl_spawn(tl_spawn_fn real, pid_t* __restrict pid, const char* __restrict path, const posix_spawn_file_actions_t* actions, const posix_spawnattr_t* __restrict attr, char* const argv[__restrict], char* const envp[__restrict]) {
+    char* entry = NULL;
+    char** patched = (envp && !tl_is_ios_app() && tl_child_may_inject(path)) ? tl_env_with_loader(envp, &entry) : NULL;
+
+    int ret = real(pid, path, actions, attr, argv, patched ? patched : envp);
+
+    if (patched && ret == 0) {
+        TL_LOG("[TweakLoader] Armed child %s (pid %d)", path, pid ? *pid : 0);
+    }
+    free(patched);
+    free(entry);
+    return ret;
+}
+
+static int tl_posix_spawn_hook(pid_t* __restrict pid, const char* __restrict path, const posix_spawn_file_actions_t* actions, const posix_spawnattr_t* __restrict attr, char* const argv[__restrict], char* const envp[__restrict]) {
+    return tl_spawn(posix_spawn, pid, path, actions, attr, argv, envp);
+}
+
+static int tl_posix_spawnp_hook(pid_t* __restrict pid, const char* __restrict path, const posix_spawn_file_actions_t* actions, const posix_spawnattr_t* __restrict attr, char* const argv[__restrict], char* const envp[__restrict]) {
+    return tl_spawn(posix_spawnp, pid, path, actions, attr, argv, envp);
+}
+
+// Interposed rather than inline-hooked: it needs no ElleKit and is live from load, so it
+// does not depend on how far the constructor below gets.
+DYLD_INTERPOSE(tl_posix_spawn_hook, posix_spawn);
+DYLD_INTERPOSE(tl_posix_spawnp_hook, posix_spawnp);
+
 // MARK: - TweakLoader Entrypoint (Constructor)
 
 __attribute__((constructor)) static void tl_init_tweak_loader(void) {
-    // Unset DYLD_INSERT_LIBRARIES so any child processes spawned do not unintentionally inherit injection
+    // Children are armed on purpose by the spawn hook above, through its gates; a value left in
+    // the environment would hand them the loader whatever those gates say.
     unsetenv("DYLD_INSERT_LIBRARIES");
+    tl_safe_boot = tl_is_booted_in_safe_mode();
 
     // 1. Consume App Sandbox extensions FIRST so subsequent access() checks succeed in sandboxed apps (Notes, Mail, etc.)
     void* lib_sandbox_handle = dlopen("/usr/lib/system/libsystem_sandbox.dylib", RTLD_NOW);
@@ -575,8 +729,7 @@ __attribute__((constructor)) static void tl_init_tweak_loader(void) {
     }
 
     // 2. Pre-flight check: if injection is suspended or essential dependency missing, abort
-    if (access("/var/run/tweakinject.disabled", F_OK) == 0 ||
-        access("/Library/TweakInject/.disabled", F_OK) == 0) {
+    if (tl_injection_suspended()) {
         TL_LOG("[TweakLoader] Injection is suspended, skipping");
         return;
     }
@@ -618,7 +771,7 @@ __attribute__((constructor)) static void tl_init_tweak_loader(void) {
         dlopen(tl_safe_mode_dylib_path, RTLD_NOW);
     }
 
-    if (tl_is_booted_in_safe_mode()) {
+    if (tl_safe_boot) {
         TL_LOG("[TweakLoader] SafeBoot enabled, skipping injection");
         return;
     }

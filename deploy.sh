@@ -27,7 +27,7 @@ APP_PAYLOAD="/Users/doraorak/Desktop/programming/XCode-projects/APP/My apps/Twea
 # build does not. Update these whenever the thing they prove changes.
 CANARY_TI_LaunchdHooks="SecurityAgent"
 CANARY_TI_XpcProxyHooks="SecurityAgent"
-CANARY_TI_TweakLoader="/Library/TweakInject/Internal/logs/tweakinject.log"
+CANARY_TI_TweakLoader="/Library/TweakInject/Internal/TI_TweakLoader.dylib"
 
 products_dir() {
     xcodebuild -project "$PROJECT" -scheme "$1" -configuration Release \

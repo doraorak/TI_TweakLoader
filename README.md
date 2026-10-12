@@ -12,7 +12,8 @@ its iOS counterparts while extending what a tweak can filter on.
 
 | Component | What it is |
 |---|---|
-| `TweakLoader/` | The dylib (`TI_TweakLoader.dylib`) injected into every process. Enumerates filter plists, decides what loads, and `dlopen`s the matching tweaks. |
+| `TweakLoader/` | The dylib (`TI_TweakLoader.dylib`) injected into every process. Enumerates filter plists, decides what loads, and `dlopen`s the matching tweaks. It also hooks `posix_spawn`, so processes that something other than launchd starts get the loader too. |
+| `Shared/` | What the three components above have in common: the never-inject process list and the dyld interposing macro. |
 | `LaunchdHooks/` | Hooks `posix_spawn` inside launchd so newly spawned processes inherit the loader. Also where per-process disable and Safe Mode are enforced. |
 | `XpcProxyHooks/` | The same for `xpcproxy`, which is what actually execs most XPC services. |
 | `SafeMode/` | Crash tripwire loaded into critical processes, so a broken tweak cannot leave the machine unusable. |
@@ -21,6 +22,24 @@ its iOS counterparts while extending what a tweak can filter on.
 Disabling injection for a process, and Safe Mode itself, are enforced in the spawn
 hooks rather than in the loader: a stripped process never receives
 `TI_TweakLoader.dylib` at all, so there is nothing in it to go wrong.
+
+## Processes launchd did not start
+
+launchd only arms what it spawns itself. A process started by anything else — a
+terminal tool, an IDE, a build system — would never see the loader. So the loader
+interposes `posix_spawn` and `posix_spawnp` in the processes it is injected into, and
+puts itself first in the child's `DYLD_INSERT_LIBRARIES`, keeping whatever the caller
+already inserts. The same gates as the other spawn hooks apply, evaluated on every
+spawn: injection suspended (`/var/run/tweakinject.disabled`, `/Library/TweakInject/.disabled`,
+or the loader missing), Safe Mode, safe boot, the process list, and
+`TweakInjectionDisabled` in `perProcessTweaks.plist`. Disabling or enabling injection
+therefore applies to the next process spawned, with nothing to restart.
+
+An iOS app running on the Mac (a `/Wrapper/` path or `LSRequiresIPhoneOS`) gets a
+pass-through hook, the same test the ThemeEngine function hooks use.
+
+Not covered: `fork` + `execve`, which is how shells start commands. Only
+`posix_spawn` is hooked.
 
 ## Filters
 
@@ -184,8 +203,9 @@ reboot to recover.
   `MTLCompilerService`, where a hooked function in a shared XPC service stalls the
   GPU pipeline machine-wide rather than for the app that triggered the compile.
 - `WindowServer` is deliberately **not** blacklisted.
-- Both hook files carry the same gate, blacklist and plist parser, and those blocks
-  are kept byte-identical between them. `xpcproxy` does not link CoreFoundation, so
+- The process list is one file, `Shared/ProcessBlacklist.h`, included by both spawn hooks
+  and by the loader. Both hook files carry the same gate and plist parser, and those
+  blocks are kept byte-identical between them. `xpcproxy` does not link CoreFoundation, so
   the parser in both is libc-only.
 - Code signatures for every injectable dylib are registered with the kernel
   (`F_ADDFILESIGS_RETURN`) before a userspace restart. `launchctl reboot userspace`
